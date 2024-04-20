@@ -1,0 +1,4 @@
+def printTodayWeather():
+    pass
+
+printTodayWeather()

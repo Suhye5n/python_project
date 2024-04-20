@@ -1,0 +1,6 @@
+passWord = input('비밀번호 입력: ')
+idFront = input('주민번호 앞자리 입력: ')
+idLast = input('주민번호 뒷자리 입력: ')
+id = idFront + '-' + idLast[0] + '*' * (len(idLast)-1)
+print('비밀번호: {}'.format('*'* len(passWord)))
+print('주민번호: {}'.format(id))
