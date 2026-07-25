@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>카카오톡</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="카카오톡" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#000000" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <section id="screen-list" class="screen active">
+    <div class="statusbar-spacer"></div>
+
+    <header class="list-header">
+      <h1>채팅</h1>
+      <div class="header-icons">
+        <button class="icon-btn" aria-label="검색">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="새 채팅">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-6 9h-1v3h-2v-3H8V9h3V6h2v3h3v2z"/></svg>
+          <span class="dot"></span>
+        </button>
+        <button class="icon-btn" aria-label="설정">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.6.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.4.32.6.22l2.39-.96c.49.38 1.02.7 1.62.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.6-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active">전체</button>
+      <button class="tab pill"><span class="tab-emoji">🏠</span>190</button>
+      <button class="tab pill"><span class="tab-emoji">💬</span>999+</button>
+      <button class="tab pill circle">🛍️</button>
+      <button class="tab pill circle">☰+</button>
+    </nav>
+
+    <div class="promo">
+      <div class="promo-text">
+        <strong>감성은 유선 이어폰으로</strong>
+        <span>별처럼 빛나는 오늘의 플레이리스트</span>
+      </div>
+      <div class="promo-art">🎧</div>
+    </div>
+
+    <ul id="contact-list" class="contact-list"></ul>
+
+    <nav class="bottom-nav">
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.4c-3.3 0-9.8 1.6-9.8 4.9v2.5h19.6v-2.5c0-3.3-6.5-4.9-9.8-4.9z"/></svg>
+        <span>친구</span>
+      </button>
+      <button class="nav-item active">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.9 1.8 5.5 4.5 7l-1 4 4.3-2.3c.7.1 1.4.2 2.2.2 5.5 0 10-3.8 10-8.5S17.5 2 12 2z"/></svg>
+        <span>채팅</span>
+        <span class="nav-badge">999+</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3V4z"/></svg>
+        <span>오픈채팅</span>
+        <span class="nav-badge">999+</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M4 8l1-4h14l1 4v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1-2 2 2 2 0 0 1-2-2V8zm1 4.8c.6.3 1.3.5 2 .5.9 0 1.7-.3 2.4-.7.7.4 1.5.7 2.4.7.9 0 1.7-.3 2.4-.7.7.4 1.5.7 2.4.7.7 0 1.4-.2 2-.5V20H5v-7.2z"/></svg>
+        <span>상점</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        <span>더보기</span>
+        <span class="dot nav-dot"></span>
+      </button>
+    </nav>
+  </section>
+
+  <section id="screen-room" class="screen">
+    <div class="statusbar-spacer"></div>
+
+    <header class="room-header">
+      <button id="back-btn" class="back-btn">
+        <svg viewBox="0 0 24 24"><path d="M15.5 4.5L8 12l7.5 7.5"/></svg>
+        <span id="room-unread">999+</span>
+      </button>
+      <h2 id="room-title" class="room-title"></h2>
+      <div class="header-icons">
+        <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg></button>
+        <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11 11 0 0 0 3.4.55 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11 11 0 0 0 .55 3.4 1 1 0 0 1-.25 1z"/></svg></button>
+        <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg></button>
+      </div>
+    </header>
+
+    <div id="notice-bar" class="notice-bar">
+      <span class="notice-icon">📢</span>
+      <div class="notice-text">
+        <div id="notice-title"></div>
+        <div id="notice-body"></div>
+      </div>
+      <button id="notice-close" class="notice-close">✕</button>
+    </div>
+
+    <div id="messages" class="messages"></div>
+
+    <div class="input-bar">
+      <button class="plus-btn">+</button>
+      <input id="msg-input" type="text" placeholder="메시지 입력" />
+      <button class="input-icon">🙂</button>
+      <button class="input-icon">#</button>
+      <button class="input-icon">🎤</button>
+    </div>
+  </section>
+
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
