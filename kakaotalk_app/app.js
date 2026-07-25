@@ -160,4 +160,16 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+const appEl = document.getElementById("app");
+if (window.visualViewport) {
+  const syncViewport = () => {
+    const vv = window.visualViewport;
+    appEl.style.height = vv.height + "px";
+    appEl.style.top = vv.offsetTop + "px";
+  };
+  window.visualViewport.addEventListener("resize", syncViewport);
+  window.visualViewport.addEventListener("scroll", syncViewport);
+  syncViewport();
+}
+
 renderContacts();
