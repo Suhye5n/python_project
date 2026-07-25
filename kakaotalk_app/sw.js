@@ -1,4 +1,4 @@
-const CACHE_NAME = "kakaotalk-fake-v3";
+const CACHE_NAME = "kakaotalk-fake-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -64,7 +64,25 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+const NETWORK_FIRST = ["index.html", "app.js", "style.css", "data.js", "sw.js"];
+
 self.addEventListener("fetch", (event) => {
+  const isCode = NETWORK_FIRST.some((name) => event.request.url.endsWith(name)) ||
+    event.request.url.endsWith("/");
+
+  if (isCode) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
