@@ -7,24 +7,26 @@ const backBtn = document.getElementById("back-btn");
 const noticeBar = document.getElementById("notice-bar");
 const noticeClose = document.getElementById("notice-close");
 const msgInput = document.getElementById("msg-input");
+const micBtn = document.getElementById("mic-btn");
 
 function renderContacts() {
   contactListEl.innerHTML = "";
-  ROWS.forEach((r) => {
+  ROWS.forEach((r, i) => {
     const li = document.createElement("li");
     li.className = "contact-row" + (r.tappable ? " tappable" : "");
+    const loading = i < 6 ? "eager" : "lazy";
 
     if (r.editable) {
       const wrap = document.createElement("div");
       wrap.className = "row-wrap";
       wrap.innerHTML = `
-        <img src="${r.img}" alt="" />
+        <img src="${r.img}" alt="" loading="${loading}" decoding="async" />
         <span class="overlay-time">${r.time}</span>
         <span class="overlay-msg">${r.msg}</span>
       `;
       li.appendChild(wrap);
     } else {
-      li.innerHTML = `<img src="${r.img}" alt="" />`;
+      li.innerHTML = `<img src="${r.img}" alt="" loading="${loading}" decoding="async" />`;
     }
 
     if (r.tappable) {
@@ -39,6 +41,14 @@ function renderMessages() {
   const friend = ROWS.find((r) => r.id === FRIEND_ID);
   messagesEl.innerHTML = "";
   MESSAGES.forEach((m, i) => {
+    if (m.type === "date") {
+      const divider = document.createElement("div");
+      divider.className = "date-divider";
+      divider.innerHTML = `<span>${m.label} <span class="date-chevron">&gt;</span></span>`;
+      messagesEl.appendChild(divider);
+      return;
+    }
+
     const prev = MESSAGES[i - 1];
     const next = MESSAGES[i + 1];
     const isNewGroup = !prev || prev.sender !== m.sender;
@@ -113,8 +123,13 @@ msgInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && msgInput.value.trim()) {
     MESSAGES.push({ sender: "me", type: "text", text: msgInput.value.trim(), time: "지금" });
     msgInput.value = "";
+    micBtn.classList.remove("hidden");
     renderMessages();
   }
+});
+
+msgInput.addEventListener("input", () => {
+  micBtn.classList.toggle("hidden", msgInput.value.length > 0);
 });
 
 let touchStartX = null;

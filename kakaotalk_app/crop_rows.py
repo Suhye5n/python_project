@@ -12,6 +12,8 @@ PAD_TOP = 24
 CYCLE_1 = 192
 CYCLE_2 = 211
 WIDTH = 1206
+EXPORT_WIDTH = 860
+JPEG_QUALITY = 88
 
 ROWS = [
     ("row-01-oh-suhyeon", img2, 822, True, False),
@@ -45,6 +47,12 @@ for i, (name, src, avatar_top, two_line, editable) in enumerate(ROWS):
         row_bottom = row_top + 170
     crops.append((name, src, row_top, row_bottom, editable, avatar_top))
 
+def export(img, path):
+    if img.width > EXPORT_WIDTH:
+        ratio = EXPORT_WIDTH / img.width
+        img = img.resize((EXPORT_WIDTH, round(img.height * ratio)), Image.LANCZOS)
+    img.convert("RGB").save(path, quality=JPEG_QUALITY, optimize=True)
+
 for name, src, top, bottom, editable, avatar_top in crops:
     crop = src.crop((0, top, WIDTH, bottom))
     crop.save(f"rows/{name}.png")
@@ -61,9 +69,18 @@ for name in ("row-02-gulbi", "row-14-friend"):
     draw.rectangle(TIME_BOX, fill=BG)
     im.save(f"rows/{name}-masked.png")
 
+# re-export every row (and the masked variants) as compressed, downscaled JPEG
+for name, *_ in ROWS:
+    export(Image.open(f"rows/{name}.png"), f"rows/{name}.jpg")
+    os.remove(f"rows/{name}.png")
+for name in ("row-02-gulbi", "row-14-friend"):
+    export(Image.open(f"rows/{name}-masked.png"), f"rows/{name}-masked.jpg")
+    os.remove(f"rows/{name}-masked.png")
+    os.remove(f"rows/{name}.jpg")
+
 # standalone friend avatar crop (for chat room header/bubbles)
 friend_top = 1470
 avatar = img3.crop((48, friend_top, 191, friend_top + 144))
-avatar.save("rows/friend-avatar-real.png")
+avatar.save("assets/friend-avatar.png")
 
 print("done")

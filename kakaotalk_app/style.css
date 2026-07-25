@@ -2,8 +2,10 @@
 
 html, body {
   height: 100%;
+  height: 100dvh;
   background: #000;
   overscroll-behavior: none;
+  overflow: hidden;
 }
 
 body {
@@ -338,6 +340,29 @@ body {
   flex-direction: column;
 }
 
+.date-divider {
+  display: flex;
+  justify-content: center;
+  margin: 14px 0;
+}
+
+.date-divider span {
+  background: #262626;
+  color: #e8e8ea;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.date-chevron {
+  color: #8e8e93;
+  font-size: 11px;
+}
+
 .msg-row {
   display: flex;
   align-items: flex-end;
@@ -437,8 +462,18 @@ body {
   border: none;
   background: #2c2c2e;
   color: #fff;
-  font-size: 20px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plus-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
 #msg-input {
@@ -457,6 +492,15 @@ body {
 .input-icon {
   background: none;
   border: none;
-  font-size: 19px;
   flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  color: #c8c8ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.input-icon svg { width: 22px; height: 22px; }
+
+.input-icon.hidden { display: none; }
