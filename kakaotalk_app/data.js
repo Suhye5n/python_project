@@ -23,7 +23,7 @@ const ROWS = [
     tappable: true,
     img: "rows/row-14-friend-masked.jpg",
     time: "오전 12:16",
-    msg: "히필갑자기이런일이",
+    msg: "ㅇㅋㅇㅋ",
     roomTitle: "라고했을때시켜야짛는데/한되팔렘",
   },
   { id: "talkcloud", img: "rows/row-15-talkcloud.jpg" },
@@ -42,6 +42,22 @@ function block(sender, time, lines) {
 }
 
 const MESSAGES = [
+  { type: "date", label: "2026년 6월 10일 수요일" },
+  ...block("me", "오후 8:54", ["ㅣㅁ아", "왜전화함"]),
+  ...block("them", "오후 8:55", ["R강", "고양이릴스보냈길래"]),
+  { sender: "them", type: "sticker", emoji: "🐱", time: "오후 8:55" },
+  ...block("me", "오후 9:55", ["ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ", "남틴", "여행가서", "심심?"]),
+  ...block("them", "오후 9:55", ["아직 안감", "ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ", "님 남친이랑잇제"]),
+  ...block("me", "오후 9:55", ["Yes"]),
+  ...block("them", "오후 9:55", ["Ok", "Ss go", "Sexy sex"]),
+  ...block("them", "오후 9:56", ["라는뜻"]),
+  ...block("me", "오후 10:20", ["ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅅㅍ", "Sexy sex는", "섹스가 얼마나 더 섹스해야대는거냐", "ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ"]),
+  ...block("them", "오후 10:34", ["ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ야하게 야스하란뜻", "ㅎ", "ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ"]),
+  ...block("me", "오후 11:53", ["ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ", "야섹 야르~"]),
+
+  { type: "date", label: "2026년 6월 11일 목요일" },
+  ...block("them", "오전 7:56", ["ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ 야섹 야 - 호 🤝"]),
+
   { type: "date", label: "2026년 7월 23일 목요일" },
   ...block("them", "오후 8:22", ["님아…", "하 ㅅㅍ", "님아 카톡좀"]),
   ...block("me", "오후 8:23", ["애", "왜", "웨", "우ㅔ"]),

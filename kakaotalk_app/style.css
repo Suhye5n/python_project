@@ -349,13 +349,14 @@ body {
 .date-divider span {
   background: #262626;
   color: #e8e8ea;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 14px;
+  padding: 4px 14px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   gap: 4px;
+  line-height: 1.6;
 }
 
 .date-chevron {
