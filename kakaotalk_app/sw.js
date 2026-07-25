@@ -1,4 +1,4 @@
-const CACHE_NAME = "kakaotalk-fake-v2";
+const CACHE_NAME = "kakaotalk-fake-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -28,6 +28,24 @@ const ASSETS = [
   "./rows/row-16-dihacle.jpg",
   "./rows/row-17-wsa.jpg",
   "./rows/row-18-fastcampus.jpg",
+  "./rows/row-19-cj-deljoie.jpg",
+  "./rows/row-20-loccitane.jpg",
+  "./rows/row-21-ably.jpg",
+  "./rows/row-22-jinryang.jpg",
+  "./rows/row-23-sibotaku.jpg",
+  "./rows/row-24-twosome.jpg",
+  "./rows/row-25-juvis-ad.jpg",
+  "./rows/row-26-bithumb.jpg",
+  "./rows/row-27-banksalad.jpg",
+  "./rows/row-28-klairs.jpg",
+  "./rows/row-29-taling.jpg",
+  "./rows/row-30-zigzag.jpg",
+  "./rows/row-31-lguplus.jpg",
+  "./rows/row-32-kakaogift.jpg",
+  "./rows/row-33-delipang.jpg",
+  "./rows/row-34-starbucks.jpg",
+  "./rows/row-35-paybook.jpg",
+  "./rows/row-36-studyalert.jpg",
 ];
 
 self.addEventListener("install", (event) => {
