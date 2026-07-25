@@ -22,7 +22,7 @@ const ROWS = [
     editable: true,
     tappable: true,
     img: "rows/row-14-friend-masked.jpg",
-    time: "오전 12:16",
+    time: "어제",
     msg: "ㅇㅋㅇㅋ",
     roomTitle: "라고했을때시켜야짛는데/한되팔렘",
   },

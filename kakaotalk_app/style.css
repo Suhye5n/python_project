@@ -188,11 +188,10 @@ body {
 }
 
 .overlay-time {
-  left: 80%;
+  right: 4.3%;
   top: 20%;
-  width: 18%;
   height: 28%;
-  font-size: 2vw;
+  font-size: 2.5vw;
   justify-content: flex-end;
 }
 
@@ -201,7 +200,7 @@ body {
   top: 50%;
   width: 62%;
   height: 28%;
-  font-size: 2.8vw;
+  font-size: 3vw;
   justify-content: flex-start;
 }
 
