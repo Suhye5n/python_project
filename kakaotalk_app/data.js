@@ -1,26 +1,35 @@
-// 편집 포인트: 아래 CONTACTS/MESSAGES 배열만 수정하면 화면 내용이 바뀝니다.
+// 편집 포인트: ROWS 배열의 time/msg 값과 MESSAGES 배열만 고치면 화면 내용이 바뀝니다.
+// (나머지 대화상대는 실제 스크린샷을 잘라 만든 이미지라서 코드로 수정할 수 없습니다.)
 
-const FRIEND_ID = "raego";
+const FRIEND_ID = "friend";
 
-const CONTACTS = [
-  { id: "c1", name: "생존신고 요망", count: "3", time: "오후 4:51", msg: "설마", avatar: { emoji: "🏝️", bg: "#3a3a3c" } },
-  { id: "c2", name: "굴비", time: "오후 4:22", msg: "넹", avatar: { emoji: "🐕", bg: "#d8c9b0" } },
-  { id: "c3", name: "카카오톡 지갑", time: "오후 4:20", msg: "카카오 인증서를 발급했어요.", avatar: { emoji: "👛", bg: "#4fa8e0" } },
-  { id: "c4", name: "민혁", time: "오후 3:31", msg: "와..", avatar: { emoji: "🌊", bg: "#2b6b6b" } },
-  { id: "c5", name: "카카오계정", unread: "1", time: "오후 3:00", msg: "카카오톡 로그인 시도 알림", avatar: { emoji: "🔒", bg: "#ffcd00" } },
-  { id: "c6", name: "삼성카드", time: "오후 2:28", msg: "삼성3571승인 오*현 11,500원 일시불...", avatar: { text: "삼성\n카드", bg: "#1428a0" } },
-  { id: "c7", name: "카카오페이", time: "오후 2:28", msg: "결제가 완료되었어요.", avatar: { text: "pay", bg: "#ffcd00" } },
-  { id: "c8", name: "가족방", count: "4", muted: true, time: "오후 1:25", msg: "삼계탕 끓여 놓음 먹으시오...", avatar: { emoji: "👨‍👩‍👧‍👦", bg: "#48484a" } },
-  { id: "c9", name: "6월 팬션 놀쟈야야~", count: "11", muted: true, time: "오후 12:32", msg: "에어컨켜놓고 출근한다", avatar: { emoji: "🐱", bg: "#5a5a5c" } },
-  { id: "c10", name: "델쥬아", unread: "1", time: "오전 10:30", msg: "(광고) 델쥬아 정기구독 누적리뷰", avatar: { text: "D", bg: "#ffffff", fg: "#1f7a4d" } },
-  { id: "c11", name: "카카오톡 예약하기", time: "오전 10:00", msg: "(광고)[특가] 롯데호텔 월드 라세느", avatar: { emoji: "📅", bg: "#ffcd00" } },
-  { id: "c12", name: "드림이", time: "오전 9:56", msg: "[정기적 수신동의 확인 안내] 안녕하세요. 드림이 카카오톡 채널입니다....", avatar: { emoji: "🐭", bg: "#e8e8ea" } },
-  { id: "c13", name: "롱블랙", time: "오전 9:30", msg: "게으름의 기술 : 생각 많은 헤르만 헤세의 휴식 노하우", avatar: { text: "LB", bg: "#000000" } },
-  { id: FRIEND_ID, name: "라고했을때시켜야짛는데/한되팔렘", time: "오전 12:16", msg: "히필갑자기이런일이", avatar: { img: "assets/friend-avatar.png" }, tappable: true },
-  { id: "c15", name: "톡클라우드", time: "어제", msg: "곧 백업 중단! 용량을 확보해 주세요.", avatar: { emoji: "☁️", bg: "#ffcd00" } },
-  { id: "c16", name: "여름인데 놀러와!", ad: true, time: "어제", msg: "AD · App Store", avatar: { emoji: "🅰️", bg: "#0a84ff" } },
-  { id: "c17", name: "디하클 - (디지털노마드 하이클래스)", unread: "2", muted: true, time: "어제", msg: "(광고) 😱 월 200직장인 -> 월4300만원", avatar: { text: "디하클", bg: "#ffffff", fg: "#111111" } },
-  { id: "c18", name: "WSA와인아카데미", time: "어제", msg: "(광고) 지금 오픈 이벤트 진행 중", avatar: { text: "WSA", bg: "#5b3a9e" } },
+const ROWS = [
+  { id: "oh-suhyeon", img: "rows/row-01-oh-suhyeon.png" },
+  { id: "gulbi", editable: true, img: "rows/row-02-gulbi-masked.png", time: "오후 4:22", msg: "넹" },
+  { id: "family", img: "rows/row-03-family.png" },
+  { id: "survival", img: "rows/row-04-survival.png" },
+  { id: "wallet", img: "rows/row-05-wallet.png" },
+  { id: "account", img: "rows/row-06-account.png" },
+  { id: "samsungcard", img: "rows/row-07-samsungcard.png" },
+  { id: "kakaopay", img: "rows/row-08-kakaopay.png" },
+  { id: "june-pension", img: "rows/row-09-june-pension.png" },
+  { id: "deljoie", img: "rows/row-10-deljoie.png" },
+  { id: "reserve", img: "rows/row-11-reserve.png" },
+  { id: "dreami", img: "rows/row-12-dreami.png" },
+  { id: "longblack", img: "rows/row-13-longblack.png" },
+  {
+    id: FRIEND_ID,
+    editable: true,
+    tappable: true,
+    img: "rows/row-14-friend-masked.png",
+    time: "오전 12:16",
+    msg: "히필갑자기이런일이",
+    roomTitle: "라고했을때시켜야짛는데/한되팔렘",
+  },
+  { id: "talkcloud", img: "rows/row-15-talkcloud.png" },
+  { id: "dihacle", img: "rows/row-16-dihacle.png" },
+  { id: "wsa", img: "rows/row-17-wsa.png" },
+  { id: "fastcampus", img: "rows/row-18-fastcampus.png" },
 ];
 
 const NOTICE = {
