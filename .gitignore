@@ -1,0 +1,9 @@
+# design_digest 산출물 (리포트/이미지/수집 이력)
+design_digest_data/
+design_digest.toml
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store

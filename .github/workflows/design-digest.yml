@@ -1,0 +1,69 @@
+name: 디자인 다이제스트
+
+on:
+  schedule:
+    # UTC 22:00 = 한국 시간 매일 07:00
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "run = 메일 발송 / preview = 리포트만 생성"
+        type: choice
+        options: [run, preview]
+        default: run
+      include_seen:
+        description: "이미 보고했던 항목도 포함"
+        type: boolean
+        default: false
+
+# 앞선 실행이 아직 돌고 있으면 기다렸다가 순서대로 (수집 이력 캐시 충돌 방지)
+concurrency:
+  group: design-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 외부 의존성이 없으므로 pip install 단계가 없다.
+
+      # 이미 보고한 글을 다음 날 또 보내지 않으려면 SQLite 기록이 실행 간에 남아야 한다.
+      - name: 수집 이력 복원
+        uses: actions/cache@v4
+        with:
+          path: design_digest_data
+          key: design-digest-data-${{ github.run_id }}
+          restore-keys: |
+            design-digest-data-
+
+      - name: 다이제스트 실행
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          DIGEST_TIMEZONE: Asia/Seoul
+        run: |
+          python -m design_digest \
+            ${{ github.event.inputs.mode || 'run' }} \
+            ${{ github.event.inputs.include_seen == 'true' && '--include-seen' || '' }}
+
+      - name: 리포트 보관
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-digest-report
+          path: |
+            design_digest_data/reports
+            design_digest_data/archive
+          retention-days: 30
+          if-no-files-found: ignore
