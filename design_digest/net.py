@@ -19,8 +19,17 @@ from typing import Any
 log = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 20
-# 이 상태코드는 재시도해도 결과가 달라지지 않으므로 바로 포기한다.
+# 이 상태코드는 같은 요청을 반복해도 결과가 달라지지 않으므로 바로 포기한다.
 NO_RETRY_STATUSES = {400, 401, 403, 404, 405, 410, 451}
+# 다만 이 코드들은 '이 요청은 못 받겠다'는 뜻이라, 헤더를 바꾸면 통과하는 경우가 있다.
+# 실제로 요즘IT 는 405, CSS-Tricks 는 415 를 돌려줬는데 둘 다 정상 서비스 중이었다.
+# 방화벽이 브라우저가 아닌 요청을 걸러낸 것이다.
+HEADER_RETRY_STATUSES = {403, 405, 406, 415, 429}
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+)
+BROWSER_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 
 
 class FetchError(RuntimeError):
@@ -52,11 +61,14 @@ def fetch_bytes(
     headers: dict[str, str] | None = None,
     accept: str = "*/*",
     max_bytes: int | None = None,
+    data: bytes | None = None,
+    allow_browser_retry: bool = True,
 ) -> tuple[bytes, dict[str, str]]:
     """URL을 받아 (본문 bytes, 응답 헤더) 를 돌려준다.
 
     실패하면 지수 백오프로 `retries` 번까지 재시도하고, 그래도 안 되면
-    `FetchError` 를 던진다.
+    `FetchError` 를 던진다. 방화벽이 헤더를 보고 막은 것 같으면 브라우저처럼
+    보이는 헤더로 한 번 더 시도한다.
     """
     request_headers = {
         "User-Agent": user_agent,
@@ -68,8 +80,10 @@ def fetch_bytes(
         request_headers.update(headers)
 
     last_error: Exception | None = None
-    for attempt in range(retries + 1):
-        request = urllib.request.Request(url, headers=request_headers)
+    browser_retry_done = False
+    attempt = 0
+    while attempt <= retries:
+        request = urllib.request.Request(url, headers=request_headers, data=data)
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 if max_bytes:
@@ -83,6 +97,18 @@ def fetch_bytes(
                 return body, dict(response.headers.items())
         except urllib.error.HTTPError as exc:
             last_error = exc
+            # 헤더 때문에 막힌 것으로 보이면 브라우저 흉내로 딱 한 번 더.
+            if (
+                allow_browser_retry
+                and not browser_retry_done
+                and exc.code in HEADER_RETRY_STATUSES
+                and request_headers["User-Agent"] != BROWSER_USER_AGENT
+            ):
+                browser_retry_done = True
+                request_headers["User-Agent"] = BROWSER_USER_AGENT
+                request_headers["Accept"] = BROWSER_ACCEPT
+                log.debug("%s: %s 응답, 브라우저 헤더로 재시도", url, exc.code)
+                continue
             if exc.code in NO_RETRY_STATUSES:
                 break
         except FetchError:
@@ -94,6 +120,7 @@ def fetch_bytes(
             delay = 2**attempt
             log.debug("요청 실패(%s), %s초 뒤 재시도: %s", last_error, delay, url)
             time.sleep(delay)
+        attempt += 1
 
     raise FetchError(f"{url} 요청 실패: {last_error}")
 

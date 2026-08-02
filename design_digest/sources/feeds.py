@@ -7,6 +7,7 @@ feedparser 같은 외부 의존성 없이 `xml.etree` 로 직접 읽는다.
 
 from __future__ import annotations
 
+import codecs
 import logging
 import os
 import re
@@ -125,10 +126,45 @@ def _entry_image(entry: ElementTree.Element, body: str) -> str:
     return ""
 
 
+def _strip_preamble(payload: bytes | str) -> bytes | str:
+    """XML 선언 앞에 붙어오는 것들을 잘라낸다.
+
+    BOM, 앞쪽 공백, 심지어 CMS 가 뱉은 경고문이 `<?xml` 앞에 붙어 오는 피드가
+    있다. 그대로 넘기면 "XML or text declaration not at start of entity" 로
+    죽는다. 실제로 Dezeen 이 이 경우였다.
+    """
+    if isinstance(payload, bytes):
+        if payload.startswith(codecs.BOM_UTF8):
+            payload = payload[len(codecs.BOM_UTF8) :]
+        return _cut_to_start(payload.lstrip(b"\r\n\t \x00"), b"<?xml", b"<")
+
+    return _cut_to_start(payload.lstrip("﻿ \r\n\t\x00"), "<?xml", "<")
+
+
+def _cut_to_start(payload, declaration, angle):
+    """선언(또는 첫 태그) 앞의 내용물을 잘라낸다.
+
+    XML 선언은 문서 맨 앞에 와야 한다. 캐시 계층이 붙인 주석이나 서버가 흘린
+    경고문이 앞에 있으면 선언이 뒤로 밀려 파싱이 실패한다.
+    """
+    if payload.startswith(declaration):
+        return payload
+
+    index = payload.find(declaration)
+    if index > 0:
+        return payload[index:]
+
+    if not payload.startswith(angle):
+        index = payload.find(angle)
+        if index > 0:
+            return payload[index:]
+    return payload
+
+
 def parse_feed(xml_bytes: bytes | str, source: FeedSource) -> list[Article]:
     """피드 XML을 Article 목록으로."""
     try:
-        root = ElementTree.fromstring(xml_bytes)
+        root = ElementTree.fromstring(_strip_preamble(xml_bytes))
     except ElementTree.ParseError as exc:
         raise FeedError(f"XML 파싱 실패: {exc}") from exc
 

@@ -52,6 +52,9 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
           DIGEST_TIMEZONE: Asia/Seoul
+          # 없으면 공개 엔드포인트로 폴백하지만, 클라우드 IP 는 대개 403 으로 막힌다.
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           MODE: ${{ github.event.inputs.mode || 'run' }}
           INCLUDE_SEEN: ${{ github.event.inputs.include_seen }}
         run: |

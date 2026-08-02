@@ -39,6 +39,8 @@ python -m design_digest run
 | `SMTP_USER` | 계정 | `sy1599@gmail.com` |
 | `SMTP_PASSWORD` | 비밀번호 (Gmail은 **앱 비밀번호**) | `abcd efgh ijkl mnop` |
 | `MAIL_TO` | 받는 사람 (쉼표로 여러 명) | `sy1599@gmail.com` |
+| `REDDIT_CLIENT_ID` | (선택) Reddit 앱 id — §3-1 | |
+| `REDDIT_CLIENT_SECRET` | (선택) Reddit 앱 secret | |
 
 Gmail을 쓴다면 계정 비밀번호가 아니라 앱 비밀번호가 필요합니다.
 [Google 계정 → 보안 → 2단계 인증 → 앱 비밀번호](https://myaccount.google.com/apppasswords)에서
@@ -81,12 +83,33 @@ MAIL_TO        받을 주소
 수집 이력(SQLite)은 `actions/cache` 로 실행 간에 보존됩니다. 캐시가 만료돼 초기화되면
 하루치 정도 예전 글이 다시 올 수 있는데, 큰 문제는 아닙니다.
 
+## 3-1. Reddit 인증 (Actions에서 돌린다면 사실상 필수)
+
+Reddit은 **데이터센터 IP에서 오는 공개 `.json` 요청을 막습니다.** GitHub Actions 러너가 정확히
+여기 해당해서, 인증 없이 돌리면 서브레딧 8곳이 전부 `403 Blocked`로 실패합니다.
+(내 컴퓨터에서 돌릴 때는 대체로 그냥 됩니다.)
+
+앱을 등록하면 정식 API로 붙습니다. 2분 걸립니다.
+
+1. https://www.reddit.com/prefs/apps → 맨 아래 **create another app...**
+2. 이름 아무거나, 타입은 **script** 선택, redirect uri는 `http://localhost:8080`
+3. 만들고 나면 앱 이름 아래 짧은 문자열이 **client id**, `secret` 항목이 **client secret**
+
+이 둘을 Secrets에 추가합니다.
+
+| Name | Secret |
+| --- | --- |
+| `REDDIT_CLIENT_ID` | 앱 이름 아래 문자열 |
+| `REDDIT_CLIENT_SECRET` | secret 값 |
+
+넣으면 `oauth.reddit.com`으로, 없으면 기존 공개 주소로 자동 폴백합니다. 코드 수정은 없습니다.
+
 ## 4. 무엇을 어떻게 모으나
 
 ### 글
 
-`sources.toml` 에 적힌 RSS/Atom 피드 22곳을 병렬로 읽습니다. Dezeen, NN/g, Smashing Magazine,
-A List Apart, Design Observer, AIGA Eye on Design, 요즘IT 등 트렌드 · 방법론 · 철학이 고루 섞여 있습니다.
+`sources.toml` 에 적힌 RSS/Atom 피드 20곳을 병렬로 읽습니다. Dezeen, NN/g, Smashing Magazine,
+A List Apart, Design Observer, 요즘IT 등 트렌드 · 방법론 · 철학이 고루 섞여 있습니다.
 
 수집한 글은 제목/본문 키워드로 세 갈래로 분류합니다.
 
@@ -268,7 +291,7 @@ design_digest/
 python -m unittest discover -s tests -t . -v
 ```
 
-85개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
+102개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
 메일 조립을 고정된 픽스처로 검증합니다.
 
 스크랩 테스트가 확인하는 것은 "Behance가 오늘도 되는가"가 아니라 "이런 구조면 뽑아낼 수
@@ -281,7 +304,10 @@ python -m unittest discover -s tests -t . -v
 - **스크랩 소스는 깨질 수 있습니다**: Behance·Dribbble·노트폴리오·월간디자인은 사이트 개편에
   영향을 받습니다. 자동 탐색과 og:image 폴백으로 한 번에 죽지는 않게 해뒀지만, 0장이 나오면
   `debug --source 이름` 으로 키 이름을 확인해 `fields` 에 적어주세요. 코드 수정은 필요 없습니다.
-- **Reddit**: 로그인 없는 공개 JSON을 쓰기 때문에 가끔 429(요청 제한)가 날 수 있습니다.
-  그날 이미지 수집만 건너뛰고 글 리포트는 정상 발송됩니다.
+- **Reddit**: 클라우드 IP에서는 공개 JSON이 막힙니다(§3-1 참고). 인증을 넣지 않으면 Actions
+  실행에서 서브레딧이 전부 실패하지만, 글 리포트와 나머지 이미지 소스는 정상 동작합니다.
+- **방화벽에 막히는 매체**: 일부 사이트는 RSS 리더가 아닌 요청을 405/415로 거절합니다.
+  그런 응답을 받으면 브라우저처럼 보이는 헤더로 한 번 더 시도합니다(요즘IT, CSS-Tricks가
+  이 경우였습니다).
 - **요약**: 피드가 주는 본문 앞부분을 발췌하는 방식입니다. LLM 요약이 필요하면 `pipeline.py` 의
   분류 단계 뒤에 붙이면 됩니다.

@@ -26,11 +26,12 @@ name = "Design Milk"
 url = "https://design-milk.com/feed/"
 category = "trend"
 
-[[feed]]
-name = "It's Nice That"
-url = "https://www.itsnicethat.com/rss"
-category = "trend"
-weight = 1.1
+# It's Nice That: 2026-08 확인 시 /rss 가 404. 다른 주소를 찾으면 되살릴 것.
+# [[feed]]
+# name = "It's Nice That"
+# url = "https://www.itsnicethat.com/rss"
+# category = "trend"
+# weight = 1.1
 
 [[feed]]
 name = "Core77"
@@ -104,11 +105,12 @@ url = "https://designobserver.com/feed/"
 category = "philosophy"
 weight = 1.2
 
-[[feed]]
-name = "AIGA Eye on Design"
-url = "https://eyeondesign.aiga.org/feed/"
-category = "philosophy"
-weight = 1.2
+# AIGA Eye on Design: 2026-08 확인 시 /feed/ 가 404.
+# [[feed]]
+# name = "AIGA Eye on Design"
+# url = "https://eyeondesign.aiga.org/feed/"
+# category = "philosophy"
+# weight = 1.2
 
 [[feed]]
 name = "PRINT Magazine"
@@ -133,6 +135,11 @@ url = "https://rss.blog.naver.com/designpress2016.xml"
 category = "trend"
 
 # ---------------------------------------------------- 이미지 (인기순 게시물)
+#
+# GitHub Actions 같은 데이터센터 IP 에서는 공개 엔드포인트가 403 Blocked 로 막힌다.
+# https://www.reddit.com/prefs/apps 에서 script 앱을 만들고 REDDIT_CLIENT_ID /
+# REDDIT_CLIENT_SECRET 를 넣으면 정식 API 로 붙는다. (자세한 건 README 3-1)
+
 [[reddit]]
 subreddit = "Design"
 min_score = 80
