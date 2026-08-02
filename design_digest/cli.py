@@ -16,6 +16,7 @@ import logging
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Callable
 
 from .config import Config
 from .mailer import MailError, send_digest, send_test_mail
@@ -23,9 +24,10 @@ from .models import CATEGORY_LABELS
 from .pipeline import build_digest
 from .render import render_text, save_report
 from .sources import load_sources
-from .sources.feeds import collect_feed
+from .sources.feeds import collect_feed, collect_image_feed
 from .sources.hackernews import collect_stories
 from .sources.reddit import collect_subreddit
+from .sources.scrape import collect_scrape
 from .storage import SeenStore, load_archive, save_archive
 
 log = logging.getLogger("design_digest")
@@ -110,33 +112,35 @@ def cmd_check(args: argparse.Namespace) -> int:
     sources = load_sources(config.sources_path)
     results: list[tuple[str, bool, str]] = []
 
-    def probe_feed(feed):
-        items = collect_feed(feed, config)
-        return f"{len(items)}개 항목"
-
-    def probe_reddit(sub):
-        items = collect_subreddit(sub, config)
-        return f"이미지 {len(items)}장"
-
-    jobs: list[tuple[str, object]] = [(f.name, ("feed", f)) for f in sources.feeds]
-    jobs += [(s.label, ("reddit", s)) for s in sources.reddits]
+    jobs: list[tuple[str, Callable[[], str]]] = [
+        (feed.name, lambda f=feed: f"{len(collect_feed(f, config))}개 항목")
+        for feed in sources.article_feeds
+    ]
+    jobs += [
+        (feed.name, lambda f=feed: f"이미지 {len(collect_image_feed(f, config))}장")
+        for feed in sources.image_feeds
+    ]
+    jobs += [
+        (sub.label, lambda s=sub: f"이미지 {len(collect_subreddit(s, config))}장")
+        for sub in sources.reddits
+    ]
+    jobs += [
+        (scrape.name, lambda s=scrape: f"이미지 {len(collect_scrape(s, config))}장 ({s.strategy})")
+        for scrape in sources.scrapes
+        if scrape.enabled
+    ]
     if sources.hackernews.enabled:
-        jobs.append(("Hacker News", ("hn", sources.hackernews)))
-
-    def run(kind_and_source):
-        kind, source = kind_and_source
-        if kind == "feed":
-            return probe_feed(source)
-        if kind == "reddit":
-            return probe_reddit(source)
-        return f"{len(collect_stories(source, config))}개 스토리"
+        hn = sources.hackernews
+        jobs.append(("Hacker News", lambda: f"{len(collect_stories(hn, config))}개 스토리"))
 
     with ThreadPoolExecutor(max_workers=config.max_workers) as pool:
-        futures = {pool.submit(run, payload): name for name, payload in jobs}
+        futures = {pool.submit(job): name for name, job in jobs}
         for future in as_completed(futures):
             name = futures[future]
             try:
-                results.append((name, True, future.result()))
+                note = future.result()
+                # 붙긴 했는데 0건이면 셀렉터가 어긋난 것이므로 경고로 표시한다.
+                results.append((name, not note.startswith("0"), note))
             except Exception as exc:
                 results.append((name, False, str(exc)[:100]))
 
@@ -146,8 +150,71 @@ def cmd_check(args: argparse.Namespace) -> int:
     for name, ok, note in results:
         mark = "✅" if ok else "❌"
         print(f" {mark} {name:<32} {note}")
-    print(f"\n 정상 {ok_count} / 전체 {len(results)}\n")
+    print(f"\n 정상 {ok_count} / 전체 {len(results)}")
+    if ok_count < len(results):
+        print(" 실패한 스크랩 소스는 `debug --source 이름` 으로 구조를 확인하세요.\n")
+    else:
+        print()
     return 0 if ok_count else 1
+
+
+def cmd_debug(args: argparse.Namespace) -> int:
+    """스크랩 소스가 실제로 무엇을 내려주는지 들여다본다.
+
+    사이트가 개편돼서 0장이 나올 때, 어떤 전략/경로로 고쳐야 하는지
+    바로 보이도록 응답을 요약해서 보여준다.
+    """
+    config = _config_from_args(args)
+    sources = load_sources(config.sources_path)
+    target = next((s for s in sources.scrapes if s.name == args.source), None)
+    if target is None:
+        names = ", ".join(s.name for s in sources.scrapes) or "(없음)"
+        log.error("그런 스크랩 소스가 없습니다: %s (있는 것: %s)", args.source, names)
+        return 1
+
+    from .net import fetch_text
+    from .sources.scrape import (
+        HTML_ACCEPT,
+        autodetect_items,
+        extract_embedded_json,
+        extract_meta,
+        parse_scrape,
+    )
+
+    print(f"\n▸ {target.name} — {target.url}\n  전략: {target.strategy}")
+    text = fetch_text(
+        target.url,
+        timeout=config.http_timeout,
+        retries=config.http_retries,
+        user_agent=config.user_agent,
+        accept=HTML_ACCEPT,
+        max_bytes=12 * 1024 * 1024,
+    )
+    print(f"  응답 크기: {len(text):,}자")
+
+    meta = extract_meta(text)
+    print(f"  og:image: {meta.image or '(없음)'}")
+    print(f"  og:title: {meta.headline or '(없음)'}")
+
+    blobs = extract_embedded_json(text, target.marker)
+    print(f"  script 안 JSON 덩어리: {len(blobs)}개")
+    for index, blob in enumerate(blobs[:3]):
+        found = autodetect_items(blob)
+        keys = sorted(found[0].keys())[:12] if found else []
+        print(f"    [{index}] 자동탐색 항목 {len(found)}개 · 키: {', '.join(keys) or '(없음)'}")
+
+    items = parse_scrape(text, target)
+    print(f"\n  현재 설정으로 뽑힌 이미지: {len(items)}장")
+    for item in items[:5]:
+        print(f"    · {item.title[:50]}")
+        print(f"      {item.image_url[:100]}")
+
+    if args.save:
+        path = config.data_dir / f"debug-{target.name}.txt"
+        path.write_text(text, encoding="utf-8")
+        print(f"\n  원본 저장: {path}")
+    print()
+    return 0 if items else 1
 
 
 def cmd_sources(args: argparse.Namespace) -> int:
@@ -158,9 +225,15 @@ def cmd_sources(args: argparse.Namespace) -> int:
     for feed in sources.feeds:
         label = CATEGORY_LABELS.get(feed.category, feed.category)
         print(f"  · {feed.name:<28} {label:<16} weight={feed.weight}")
-    print(f"\n[이미지 소스 {len(sources.reddits)}곳]")
+    image_feeds = sources.image_feeds
+    print(f"\n[이미지 소스 {len(sources.reddits) + len(image_feeds) + len(sources.scrapes)}곳]")
     for sub in sources.reddits:
-        print(f"  · {sub.label:<28} 최소 {sub.min_score}점")
+        print(f"  · {sub.label:<28} 최소 {sub.min_score}점 · weight={sub.weight}")
+    for feed in image_feeds:
+        print(f"  · {feed.name:<28} 이미지 피드 · weight={feed.weight}")
+    for scrape in sources.scrapes:
+        state = "" if scrape.enabled else " (꺼짐)"
+        print(f"  · {scrape.name:<28} 스크랩({scrape.strategy}) · weight={scrape.weight}{state}")
     hn = sources.hackernews
     print(f"\n[인기 신호] Hacker News {'사용' if hn.enabled else '미사용'} "
           f"· 검색어 {', '.join(hn.queries)} · {hn.min_points}점 이상\n")
@@ -229,6 +302,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("sources", help="설정된 소스 목록 보기")
     subparsers.add_parser("test-mail", help="SMTP 설정 확인용 메일 발송")
 
+    debug_parser = subparsers.add_parser("debug", help="스크랩 소스의 응답 구조 들여다보기")
+    debug_parser.add_argument("--source", required=True, help="스크랩 소스 이름 (예: Behance)")
+    debug_parser.add_argument("--save", action="store_true", help="받은 원본을 파일로 저장")
+
     render_parser = subparsers.add_parser("render", help="아카이브를 다시 렌더링")
     render_parser.add_argument("--date", help="YYYY-MM-DD (기본: 오늘)")
     render_parser.add_argument("--text", action="store_true", help="텍스트로 출력")
@@ -248,6 +325,7 @@ def main(argv: list[str] | None = None) -> int:
         "sources": cmd_sources,
         "test-mail": cmd_test_mail,
         "render": cmd_render,
+        "debug": cmd_debug,
     }
     try:
         return handlers[args.command](args)

@@ -8,11 +8,12 @@ feedparser 같은 외부 의존성 없이 `xml.etree` 로 직접 읽는다.
 from __future__ import annotations
 
 import logging
+import os
 import re
 from xml.etree import ElementTree
 
 from ..config import Config
-from ..models import Article
+from ..models import Article, ImageItem
 from ..net import fetch_bytes
 from ..util import parse_datetime, strip_html, summarize
 from . import FeedSource
@@ -163,16 +164,53 @@ def parse_feed(xml_bytes: bytes | str, source: FeedSource) -> list[Article]:
     return articles
 
 
+def to_image_items(articles: list[Article], source: FeedSource) -> list[ImageItem]:
+    """이미지 피드(`kind = "image"`)의 항목을 이미지로 변환한다.
+
+    RSSHub 같은 게이트웨이가 인스타그램/핀터레스트/비핸스를 RSS 로 바꿔줄 때,
+    각 항목은 '글'이 아니라 '작업물 한 점'이다. 인기 수치는 대개 없으므로
+    소스 가중치로 순위를 조절한다.
+    """
+    items = []
+    for article in articles:
+        if not article.image_url:
+            continue
+        items.append(
+            ImageItem(
+                title=article.title,
+                url=article.url,
+                image_url=article.image_url,
+                source=source.name,
+                published=article.published,
+                author=article.author,
+                popularity_note=source.name,
+            )
+        )
+    return items
+
+
 def collect_feed(source: FeedSource, config: Config) -> list[Article]:
     """피드 하나를 받아 글 목록으로. 네트워크 오류는 그대로 올린다."""
+    headers = {}
+    if source.cookie_env:
+        cookie = os.environ.get(source.cookie_env, "")
+        if cookie:
+            headers["Cookie"] = cookie
+
     body, _ = fetch_bytes(
         source.url,
         timeout=config.http_timeout,
         retries=config.http_retries,
         user_agent=config.user_agent,
         accept=FEED_ACCEPT,
+        headers=headers or None,
         max_bytes=8 * 1024 * 1024,
     )
     articles = parse_feed(body, source)
     log.debug("%s: %d개 항목", source.name, len(articles))
     return articles
+
+
+def collect_image_feed(source: FeedSource, config: Config) -> list[ImageItem]:
+    """이미지 피드 하나를 받아 이미지 목록으로."""
+    return to_image_items(collect_feed(source, config), source)

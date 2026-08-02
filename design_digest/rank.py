@@ -53,6 +53,7 @@ def score_article(
 def score_image(
     item: ImageItem,
     *,
+    weight: float = 1.0,
     lookback_hours: int = 30,
     now: dt.datetime | None = None,
 ) -> float:
@@ -61,7 +62,9 @@ def score_image(
     # 댓글은 '언급이 많았다'는 신호라 별도로 조금 더 쳐준다.
     score += math.log1p(max(item.comments, 0)) * 0.6
     score += _freshness(item.published, now, lookback_hours) * FRESHNESS_FACTOR
-    return round(score, 4)
+    # 큐레이션 소스(Behance, 노트폴리오 등)는 좋아요 수를 못 가져오는 경우가
+    # 많다. 그대로 두면 숫자가 붙는 레딧에 항상 밀리므로 가중치로 보정한다.
+    return round(score * weight, 4)
 
 
 def rank_articles(
@@ -86,12 +89,19 @@ def rank_articles(
 def rank_images(
     items: list[ImageItem],
     *,
+    weights: dict[str, float] | None = None,
     lookback_hours: int = 30,
     now: dt.datetime | None = None,
 ) -> list[ImageItem]:
+    weights = weights or {}
     now = now or utc_now()
     for item in items:
-        item.score = score_image(item, lookback_hours=lookback_hours, now=now)
+        item.score = score_image(
+            item,
+            weight=weights.get(item.source, 1.0),
+            lookback_hours=lookback_hours,
+            now=now,
+        )
     return sorted(items, key=lambda i: i.score, reverse=True)
 
 
@@ -117,14 +127,42 @@ def select_articles(
     return picked
 
 
-def select_images(ranked: list[ImageItem], *, limit: int, per_source: int = 3) -> list[ImageItem]:
+def select_images(
+    ranked: list[ImageItem],
+    *,
+    limit: int,
+    per_source: int = 3,
+    guarantee: int = 1,
+) -> list[ImageItem]:
+    """이미지를 고른다. 입력은 점수 내림차순.
+
+    점수만으로 뽑으면 업보트 수천 개가 붙는 레딧이 자리를 다 가져가고,
+    좋아요 수를 못 읽어오는 Behance·노트폴리오·인스타그램은 매일 밀려난다.
+    그래서 소스마다 `guarantee` 장은 먼저 확보하고, 남은 자리를 점수순으로 채운다.
+    보고 싶어서 등록한 곳이 숫자 싸움에서 져 사라지는 일은 없어야 한다.
+    """
     source_counts: dict[str, int] = defaultdict(int)
     picked: list[ImageItem] = []
+    claimed: set[int] = set()
+
+    def take(item: ImageItem) -> None:
+        picked.append(item)
+        claimed.add(id(item))
+        source_counts[item.source] += 1
+
+    if guarantee > 0:
+        for item in ranked:
+            if len(picked) >= limit:
+                break
+            if source_counts[item.source] < guarantee:
+                take(item)
+
     for item in ranked:
         if len(picked) >= limit:
             break
-        if source_counts[item.source] >= per_source:
+        if id(item) in claimed or source_counts[item.source] >= per_source:
             continue
-        picked.append(item)
-        source_counts[item.source] += 1
+        take(item)
+
+    picked.sort(key=lambda i: i.score, reverse=True)
     return picked

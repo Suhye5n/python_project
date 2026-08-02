@@ -11,6 +11,7 @@ import datetime as dt
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Callable
 from zoneinfo import ZoneInfo
 
 from . import classify, rank
@@ -19,9 +20,10 @@ from .models import Article, Digest, ImageItem
 from .media import download_all
 from .net import FetchError
 from .sources import SourceSet, load_sources
-from .sources.feeds import FeedError, collect_feed
+from .sources.feeds import FeedError, collect_feed, collect_image_feed
 from .sources.hackernews import collect_stories, popularity_index
 from .sources.reddit import collect_subreddit
+from .sources.scrape import collect_scrape
 from .storage import SeenStore
 from .util import normalize_url, utc_now
 
@@ -41,14 +43,15 @@ def _within_window(article: Article, now: dt.datetime, lookback_hours: int) -> b
 def collect_articles(
     sources: SourceSet, config: Config, failures: list[tuple[str, str]]
 ) -> list[Article]:
-    """모든 피드 + Hacker News 를 병렬로 훑는다."""
+    """글 피드를 병렬로 훑는다."""
     articles: list[Article] = []
-    if not sources.feeds:
+    feeds = sources.article_feeds
+    if not feeds:
         return articles
 
-    workers = max(1, min(config.max_workers, len(sources.feeds)))
+    workers = max(1, min(config.max_workers, len(feeds)))
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(collect_feed, feed, config): feed for feed in sources.feeds}
+        futures = {pool.submit(collect_feed, feed, config): feed for feed in feeds}
         for future in as_completed(futures):
             feed = futures[future]
             try:
@@ -75,26 +78,44 @@ def collect_hn(
         return []
 
 
+def image_jobs(sources: SourceSet, config: Config) -> list[tuple[str, Callable[[], list[ImageItem]]]]:
+    """이미지 소스 세 종류를 (이름, 실행함수) 형태로 통일해서 늘어놓는다.
+
+    레딧처럼 인기 수치가 붙는 곳, RSSHub 같은 이미지 피드, 그리고 API 가 없어
+    직접 긁는 사이트를 같은 방식으로 돌리기 위한 어댑터.
+    """
+    jobs: list[tuple[str, Callable[[], list[ImageItem]]]] = []
+    for sub in sources.reddits:
+        jobs.append((sub.label, lambda s=sub: collect_subreddit(s, config)))
+    for feed in sources.image_feeds:
+        jobs.append((feed.name, lambda f=feed: collect_image_feed(f, config)))
+    for scrape in sources.scrapes:
+        if scrape.enabled:
+            jobs.append((scrape.name, lambda s=scrape: collect_scrape(s, config)))
+    return jobs
+
+
 def collect_images(
     sources: SourceSet, config: Config, failures: list[tuple[str, str]]
 ) -> list[ImageItem]:
     images: list[ImageItem] = []
-    if not sources.reddits:
+    jobs = image_jobs(sources, config)
+    if not jobs:
         return images
 
-    workers = max(1, min(config.max_workers, len(sources.reddits)))
+    workers = max(1, min(config.max_workers, len(jobs)))
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(collect_subreddit, sub, config): sub for sub in sources.reddits}
+        futures = {pool.submit(job): name for name, job in jobs}
         for future in as_completed(futures):
-            sub = futures[future]
+            name = futures[future]
             try:
                 images.extend(future.result())
-            except FetchError as exc:
-                log.warning("%s 수집 실패: %s", sub.label, exc)
-                failures.append((sub.label, str(exc)))
+            except (FetchError, FeedError) as exc:
+                log.warning("%s 수집 실패: %s", name, exc)
+                failures.append((name, str(exc)))
             except Exception as exc:
-                log.exception("%s 처리 중 예외", sub.label)
-                failures.append((sub.label, f"예상치 못한 오류: {exc}"))
+                log.exception("%s 처리 중 예외", name)
+                failures.append((name, f"예상치 못한 오류: {exc}"))
     return images
 
 
@@ -196,9 +217,16 @@ def build_digest(
 
     image_candidates = raw_images + images_from_articles(articles, raw_images)
     ranked_images = rank.rank_images(
-        image_candidates, lookback_hours=config.lookback_hours, now=now
+        image_candidates,
+        weights=sources.image_weights(),
+        lookback_hours=config.lookback_hours,
+        now=now,
     )
-    images = rank.select_images(ranked_images, limit=config.max_images)
+    images = rank.select_images(
+        ranked_images,
+        limit=config.max_images,
+        guarantee=config.guaranteed_images_per_source,
+    )
 
     # 6) 이미지 파일 확보 (메일 인라인 첨부용)
     downloaded = 0

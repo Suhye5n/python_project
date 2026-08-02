@@ -39,6 +39,21 @@ def url_key(url: str) -> str:
     return hashlib.sha1(normalize_url(url).encode("utf-8")).hexdigest()
 
 
+def item_key(item: object) -> str:
+    """항목의 중복 판정 키.
+
+    이미지는 URL 만으로 판정하면 안 된다. 갤러리 페이지 하나에 작업물이 여러 개
+    걸려 있으면 링크가 전부 같아서, 그날 한 장만 남고 나머지가 사라진다.
+    이미지가 있는 항목은 (페이지, 이미지) 조합으로 본다.
+    """
+    url = getattr(item, "url", "") or ""
+    image = getattr(item, "image_url", "") or ""
+    raw = normalize_url(url)
+    if image:
+        raw = f"{raw}|{normalize_url(image)}"
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+
+
 class SeenStore:
     """이미 보고한 URL 기록."""
 
@@ -66,7 +81,7 @@ class SeenStore:
         """아직 보고한 적 없는 항목만 남긴다 (이번 목록 안의 중복도 제거)."""
         if not items:
             return []
-        keys = {url_key(getattr(item, "url", "")) for item in items}
+        keys = {item_key(item) for item in items}
         placeholders = ",".join("?" * len(keys))
         rows = self._conn.execute(
             f"SELECT key FROM seen WHERE key IN ({placeholders})", tuple(keys)
@@ -75,8 +90,10 @@ class SeenStore:
 
         fresh: list[ItemT] = []
         for item in items:
-            key = url_key(getattr(item, "url", ""))
-            if not key or key in known:
+            if not getattr(item, "url", ""):
+                continue
+            key = item_key(item)
+            if key in known:
                 continue
             known.add(key)  # 같은 실행 안에서의 중복도 막는다
             fresh.append(item)
@@ -89,7 +106,7 @@ class SeenStore:
             url = getattr(item, "url", "")
             if not url:
                 continue
-            rows.append((url_key(url), url, kind, getattr(item, "title", "")[:300], now))
+            rows.append((item_key(item), url, kind, getattr(item, "title", "")[:300], now))
         if not rows:
             return 0
         self._conn.executemany(

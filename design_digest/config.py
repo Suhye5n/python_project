@@ -98,6 +98,9 @@ class Config:
     max_images: int = 12
     #: 같은 매체에서 한 번에 담을 최대 글 수 (한 곳이 도배하는 것 방지)
     max_per_source: int = 3
+    #: 이미지 소스마다 최소 몇 장은 자리를 보장할지.
+    #: 0 으로 두면 순수 점수순이 되어 인기 수치가 없는 소스는 잘 안 보인다.
+    guaranteed_images_per_source: int = 1
     #: 이전에 이미 보고한 항목을 건너뛸지
     skip_seen: bool = True
 
@@ -158,6 +161,7 @@ class Config:
             "max_articles_per_category",
             "max_images",
             "max_per_source",
+            "guaranteed_images_per_source",
             "skip_seen",
             "http_timeout",
             "http_retries",
@@ -190,6 +194,9 @@ class Config:
         )
         self.max_images = _env_int("DIGEST_MAX_IMAGES", self.max_images)
         self.max_per_source = _env_int("DIGEST_MAX_PER_SOURCE", self.max_per_source)
+        self.guaranteed_images_per_source = _env_int(
+            "DIGEST_GUARANTEED_IMAGES_PER_SOURCE", self.guaranteed_images_per_source
+        )
         self.skip_seen = _env_bool("DIGEST_SKIP_SEEN", self.skip_seen)
         self.http_timeout = _env_int("DIGEST_HTTP_TIMEOUT", self.http_timeout)
         self.http_retries = _env_int("DIGEST_HTTP_RETRIES", self.http_retries)

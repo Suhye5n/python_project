@@ -110,6 +110,46 @@ class RankTests(unittest.TestCase):
         picked = rank.select_images(ranked, limit=10, per_source=3)
         self.assertEqual(len(picked), 3)
 
+    def test_image_source_weight_orders_comparable_items(self):
+        plain = ImageItem(title="a", url="u1", image_url="i1", source="r/Design",
+                          popularity=100, published=NOW)
+        favored = ImageItem(title="b", url="u2", image_url="i2", source="Behance",
+                            popularity=100, published=NOW)
+        ranked = rank.rank_images([plain, favored], weights={"Behance": 1.5}, now=NOW)
+        self.assertEqual(ranked[0].source, "Behance")
+
+    def test_curated_sources_get_a_guaranteed_slot(self):
+        """업보트 수천 개짜리 레딧이 자리를 다 먹어도 보고 싶은 곳은 들어가야 한다."""
+        crowd = [
+            ImageItem(title=f"레딧 {i}", url=f"u{i}", image_url=f"i{i}", source="r/Design",
+                      popularity=5000 + i, published=NOW)
+            for i in range(10)
+        ]
+        curated = [
+            ImageItem(title="노트폴리오 작업", url="n1", image_url="ni", source="노트폴리오",
+                      published=NOW),
+            ImageItem(title="인스타 포스트", url="g1", image_url="gi", source="Instagram",
+                      published=NOW),
+        ]
+        ranked = rank.rank_images(crowd + curated, now=NOW)
+
+        # 매체 상한이 넉넉해도 자리 보장이 있으면 세 소스가 모두 들어온다.
+        picked = rank.select_images(ranked, limit=4, per_source=4, guarantee=1)
+        self.assertEqual({item.source for item in picked}, {"r/Design", "노트폴리오", "Instagram"})
+
+        # 보장을 끄면 인기 순수 경쟁이 되어 레딧이 자리를 다 가져간다.
+        without = rank.select_images(ranked, limit=4, per_source=4, guarantee=0)
+        self.assertEqual({item.source for item in without}, {"r/Design"})
+
+    def test_selected_images_stay_sorted_by_score(self):
+        items = [
+            ImageItem(title="a", url="u1", image_url="i1", source="A", popularity=10, published=NOW),
+            ImageItem(title="b", url="u2", image_url="i2", source="B", popularity=900, published=NOW),
+        ]
+        ranked = rank.rank_images(items, now=NOW)
+        picked = rank.select_images(ranked, limit=5, guarantee=1)
+        self.assertEqual([i.score for i in picked], sorted((i.score for i in picked), reverse=True))
+
     def test_comments_boost_image_score(self):
         quiet = ImageItem(title="a", url="u1", image_url="i1", source="s", popularity=500, published=NOW)
         talked = ImageItem(title="b", url="u2", image_url="i2", source="s", popularity=500,
@@ -158,6 +198,20 @@ class SeenStoreTests(unittest.TestCase):
         items = [make_article(url="https://example.com/x"),
                  make_article(url="https://example.com/x/?utm_source=a")]
         self.assertEqual(len(self.store.filter_new(items)), 1)
+
+    def test_images_sharing_a_page_url_are_kept_apart(self):
+        """갤러리 페이지 하나에 걸린 여러 작업물이 한 장으로 뭉치면 안 된다."""
+        items = [
+            ImageItem(title="작업 1", url="https://site/gallery", image_url="https://cdn/1.jpg",
+                      source="s"),
+            ImageItem(title="작업 2", url="https://site/gallery", image_url="https://cdn/2.jpg",
+                      source="s"),
+        ]
+        self.assertEqual(len(self.store.filter_new(items)), 2)
+
+        self.store.mark_seen(items[:1], "image")
+        remaining = self.store.filter_new(items)
+        self.assertEqual([i.title for i in remaining], ["작업 2"])
 
     def test_prune_removes_old_rows(self):
         self.store.mark_seen([make_article(url="https://example.com/old")], "article")
@@ -263,11 +317,60 @@ class PipelineTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def _run(self, feed_articles, hn_stories=(), images=(), store=None):
+    def _run(self, feed_articles, hn_stories=(), images=(), store=None, sources=None,
+             feed_images=(), scraped=()):
         with mock.patch("design_digest.pipeline.collect_feed", return_value=list(feed_articles)), \
              mock.patch("design_digest.pipeline.collect_stories", return_value=list(hn_stories)), \
-             mock.patch("design_digest.pipeline.collect_subreddit", return_value=list(images)):
-            return build_digest(self.config, sources=self.sources, store=store, now=NOW)
+             mock.patch("design_digest.pipeline.collect_subreddit", return_value=list(images)), \
+             mock.patch("design_digest.pipeline.collect_image_feed", return_value=list(feed_images)), \
+             mock.patch("design_digest.pipeline.collect_scrape", return_value=list(scraped)):
+            return build_digest(self.config, sources=sources or self.sources, store=store, now=NOW)
+
+    def test_image_feeds_and_scrapers_join_the_image_section(self):
+        from design_digest.sources import ScrapeSource
+
+        sources = SourceSet(
+            feeds=[
+                FeedSource(name="Feed A", url="https://a/feed", category=CATEGORY_TREND),
+                FeedSource(name="Instagram", url="http://localhost:1200/instagram/x",
+                           kind="image", weight=3.0),
+            ],
+            reddits=[RedditSource(subreddit="Design", min_score=10)],
+            scrapes=[ScrapeSource(name="노트폴리오", url="https://notefolio.net/discover",
+                                  weight=3.0)],
+            hackernews=HackerNewsSource(enabled=False),
+        )
+        digest = self._run(
+            [],
+            images=[ImageItem(title="레딧 인기글", url="https://r/1", image_url="https://cdn/r.jpg",
+                              source="r/Design", popularity=5000, published=NOW)],
+            feed_images=[ImageItem(title="인스타 포스트", url="https://ig/1",
+                                   image_url="https://cdn/ig.jpg", source="Instagram",
+                                   published=NOW)],
+            scraped=[ImageItem(title="노트폴리오 작업", url="https://nf/1",
+                               image_url="https://cdn/nf.jpg", source="노트폴리오",
+                               published=NOW)],
+            sources=sources,
+        )
+        self.assertEqual(
+            {i.source for i in digest.images}, {"r/Design", "Instagram", "노트폴리오"}
+        )
+
+    def test_image_feed_is_not_collected_as_article(self):
+        sources = SourceSet(
+            feeds=[FeedSource(name="Instagram", url="http://localhost:1200/instagram/x",
+                              kind="image")],
+            hackernews=HackerNewsSource(enabled=False),
+        )
+        digest = self._run(
+            [make_article(title="이건 글로 오면 안 됨", url="https://a/1")],
+            feed_images=[ImageItem(title="포스트", url="https://ig/1",
+                                   image_url="https://cdn/ig.jpg", source="Instagram",
+                                   published=NOW)],
+            sources=sources,
+        )
+        self.assertEqual(digest.articles, [])
+        self.assertEqual(len(digest.images), 1)
 
     def test_builds_digest_and_sorts_by_popularity(self):
         digest = self._run(
