@@ -182,12 +182,15 @@ def cmd_debug(args: argparse.Namespace) -> int:
         log.error("그런 스크랩 소스가 없습니다: %s (있는 것: %s)", args.source, names)
         return 1
 
+    import json
+
     from .net import fetch_text
     from .sources.scrape import (
         HTML_ACCEPT,
         autodetect_items,
         extract_embedded_json,
         extract_meta,
+        find_image,
         parse_scrape,
     )
     from .util import strip_html
@@ -208,19 +211,36 @@ def cmd_debug(args: argparse.Namespace) -> int:
         print(f"  ⚠️  봇 차단 페이지로 보입니다 ({challenge}).")
         print("      이 소스는 클라우드 IP 에서 못 읽습니다. 로컬 실행을 쓰세요.")
 
-    meta = extract_meta(text)
-    print(f"  og:image: {meta.image or '(없음)'}")
-    print(f"  og:title: {meta.headline or '(없음)'}")
-    print(f"  <a> 태그 수: {text.count('<a ')} · <img> 태그 수: {text.count('<img')}")
-    if target.link_pattern:
-        print(f"  '{target.link_pattern}' 가 들어간 링크: {text.count(target.link_pattern)}개")
+    # 응답이 JSON 이면 (API 를 직접 부르는 경우) 그대로 구조를 본다.
+    payload = None
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        pass
 
-    blobs = extract_embedded_json(text, target.marker)
-    print(f"  script 안 JSON 덩어리: {len(blobs)}개")
-    for index, blob in enumerate(blobs[:3]):
-        found = autodetect_items(blob)
-        keys = sorted(found[0].keys())[:12] if found else []
-        print(f"    [{index}] 자동탐색 항목 {len(found)}개 · 키: {', '.join(keys) or '(없음)'}")
+    if payload is not None:
+        print("  응답 형식: JSON")
+        if isinstance(payload, dict):
+            print(f"  최상위 키: {', '.join(sorted(payload)[:12])}")
+        found = autodetect_items(payload)
+        print(f"  자동탐색 항목: {len(found)}개")
+        if found:
+            print(f"  항목 키: {', '.join(sorted(found[0])[:14])}")
+            print(f"  첫 항목 이미지 후보: {find_image(found[0]) or '(못 찾음)'}")
+    else:
+        meta = extract_meta(text)
+        print(f"  og:image: {meta.image or '(없음)'}")
+        print(f"  og:title: {meta.headline or '(없음)'}")
+        print(f"  <a> 태그 수: {text.count('<a ')} · <img> 태그 수: {text.count('<img')}")
+        if target.link_pattern:
+            print(f"  '{target.link_pattern}' 가 들어간 링크: {text.count(target.link_pattern)}개")
+
+        blobs = extract_embedded_json(text, target.marker)
+        print(f"  script 안 JSON 덩어리: {len(blobs)}개")
+        for index, blob in enumerate(blobs[:3]):
+            found = autodetect_items(blob)
+            keys = sorted(found[0].keys())[:12] if found else []
+            print(f"    [{index}] 자동탐색 항목 {len(found)}개 · 키: {', '.join(keys) or '(없음)'}")
 
     items = parse_scrape(text, target)
     print(f"\n  현재 설정으로 뽑힌 이미지: {len(items)}장")

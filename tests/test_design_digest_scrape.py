@@ -287,6 +287,49 @@ class ScrapeStrategyTests(unittest.TestCase):
         self.assertEqual(items[0].url, "https://www.pinterest.com/pin/1")
         self.assertEqual(items[0].popularity, 3200)
 
+    def test_notefolio_style_api_envelope(self):
+        """노트폴리오처럼 화면이 호출하는 API 를 직접 부르는 경우.
+
+        응답 껍데기(data/items 등)를 몰라도 자동 탐색으로 목록을 찾아내고,
+        CDN 호스트만 있고 확장자가 없는 이미지 주소도 인식해야 한다.
+        """
+        payload = json.dumps({
+            "code": 200,
+            "message": "OK",
+            "data": {
+                "cursor": "eyJ0YWJsZSI6...",
+                "items": [
+                    {"id": 897235, "title": "브랜드 리뉴얼 프로젝트", "url": "/i/897235",
+                     "thumbnailUrl": "https://cdn-bastani.stunning.kr/portfolio/1.jpg",
+                     "likeCount": 1240, "viewCount": "12.3k"},
+                    {"id": 897236, "title": "패키지 디자인", "url": "/i/897236",
+                     "thumbnailUrl": "https://cdn-bastani.stunning.kr/portfolio/2.jpg",
+                     "likeCount": 830, "viewCount": 4100},
+                    {"id": 897237, "title": "UI 리디자인", "url": "/i/897237",
+                     "thumbnailUrl": "https://cdn-bastani.stunning.kr/portfolio/3.jpg",
+                     "likeCount": 502, "viewCount": 2200},
+                ],
+            },
+        })
+        source = ScrapeSource(
+            name="노트폴리오",
+            url="https://api.stunning.kr/api/v1/dantats/curation/-/item?curationType=PortfolioPick",
+            base_url="https://notefolio.net",
+            strategy="json",
+            limit=8,
+        )
+        items = parse_scrape(payload, source)
+        self.assertEqual(len(items), 3)
+
+        top = items[0]
+        self.assertEqual(top.title, "브랜드 리뉴얼 프로젝트")
+        self.assertEqual(top.image_url, "https://cdn-bastani.stunning.kr/portfolio/1.jpg")
+        # 상대 링크가 노트폴리오 주소로 이어져야 한다 (API 호스트가 아니라)
+        self.assertEqual(top.url, "https://notefolio.net/i/897235")
+        self.assertEqual(top.popularity, 1240)
+        # 같은 페이지 URL 로 뭉쳐서 중복 제거에 잡아먹히면 안 된다
+        self.assertEqual(len({i.url for i in items}), 3)
+
     def test_json_path_wrong_still_recovers_by_autodetect(self):
         payload = json.dumps({"data": {"pins": [
             {"title": "무드보드", "image_url": "https://i.pinimg.com/1.jpg"},

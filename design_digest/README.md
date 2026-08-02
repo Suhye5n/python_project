@@ -160,8 +160,8 @@ A List Apart, Design Observer, 요즘IT 등 트렌드 · 방법론 · 철학이 
 | --- | --- | --- | --- |
 | Behance | ✅ 8장 | ✅ | — |
 | 월간디자인 | ✅ 6장 | ✅ | — |
+| 노트폴리오 | ✅ (API 직접 호출) | ✅ | 화면은 JS지만 API는 열려 있음 |
 | Dribbble | ❌ | 아마 ✅ | 자바스크립트 봇 검증 |
-| 노트폴리오 | ❌ | ❌ | 화면 전체를 JS로 그림 |
 | Reddit | ❌ | ✅ | 데이터센터 IP 차단 |
 | Instagram · Pinterest | ❌ | ❌ | 로그인 필수 |
 
@@ -171,8 +171,12 @@ A List Apart, Design Observer, 요즘IT 등 트렌드 · 방법론 · 철학이 
 - **집에서 돌린다면**: `sources.toml`에서 Dribbble의 `enabled = false`를 지우고,
   `[[reddit]]` 주석을 푸세요.
 - **RSSHub를 띄운다면**: Dribbble·Instagram·Pinterest가 한 번에 해결됩니다 (아래 참고).
-- **노트폴리오**: 브라우저 개발자도구 **Network → XHR**에서 목록을 가져오는 주소를 찾으면
-  `strategy = "json"`으로 바로 붙습니다. 그 주소만 알면 되살아납니다.
+
+**JS로 그리는 사이트를 붙이는 법** — 노트폴리오가 그 사례입니다. HTML에는 아무것도 없지만,
+화면이 데이터를 가져오는 API를 직접 부르면 됩니다. 브라우저에서 **F12 → Network → Fetch/XHR**로
+목록을 싣는 요청을 찾아 그 URL을 `strategy = "json"`에 넣으세요. 응답 구조는 몰라도 됩니다.
+단, URL에 `cursor`나 `page` 같은 **페이지 위치 파라미터가 붙어 있으면 떼어내세요.** 그대로 두면
+매일 같은 과거 목록만 옵니다.
 
 ## 4-1. API가 없는 곳 붙이기 (Behance · Dribbble · 노트폴리오 · 월간디자인)
 
@@ -324,7 +328,7 @@ design_digest/
 python -m unittest discover -s tests -t . -v
 ```
 
-109개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
+110개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
 메일 조립을 고정된 픽스처로 검증합니다.
 
 스크랩 테스트가 확인하는 것은 "Behance가 오늘도 되는가"가 아니라 "이런 구조면 뽑아낼 수
