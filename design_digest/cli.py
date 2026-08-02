@@ -112,35 +112,45 @@ def cmd_check(args: argparse.Namespace) -> int:
     sources = load_sources(config.sources_path)
     results: list[tuple[str, bool, str]] = []
 
-    jobs: list[tuple[str, Callable[[], str]]] = [
-        (feed.name, lambda f=feed: f"{len(collect_feed(f, config))}개 항목")
+    # 각 작업은 (건수, 설명) 을 돌려준다. 건수를 따로 받아야 0건을 실패로 판정할 수 있다.
+    jobs: list[tuple[str, Callable[[], tuple[int, str]]]] = [
+        (feed.name, lambda f=feed: (lambda n: (n, f"{n}개 항목"))(len(collect_feed(f, config))))
         for feed in sources.article_feeds
     ]
     jobs += [
-        (feed.name, lambda f=feed: f"이미지 {len(collect_image_feed(f, config))}장")
+        (feed.name, lambda f=feed: (lambda n: (n, f"이미지 {n}장"))(len(collect_image_feed(f, config))))
         for feed in sources.image_feeds
     ]
     jobs += [
-        (sub.label, lambda s=sub: f"이미지 {len(collect_subreddit(s, config))}장")
+        (sub.label, lambda s=sub: (lambda n: (n, f"이미지 {n}장"))(len(collect_subreddit(s, config))))
         for sub in sources.reddits
     ]
     jobs += [
-        (scrape.name, lambda s=scrape: f"이미지 {len(collect_scrape(s, config))}장 ({s.strategy})")
+        (
+            scrape.name,
+            lambda s=scrape: (lambda n: (n, f"이미지 {n}장 ({s.strategy})"))(
+                len(collect_scrape(s, config))
+            ),
+        )
         for scrape in sources.scrapes
         if scrape.enabled
     ]
     if sources.hackernews.enabled:
         hn = sources.hackernews
-        jobs.append(("Hacker News", lambda: f"{len(collect_stories(hn, config))}개 스토리"))
+        jobs.append(
+            ("Hacker News", lambda: (lambda n: (n, f"{n}개 스토리"))(len(collect_stories(hn, config))))
+        )
 
     with ThreadPoolExecutor(max_workers=config.max_workers) as pool:
         futures = {pool.submit(job): name for name, job in jobs}
         for future in as_completed(futures):
             name = futures[future]
             try:
-                note = future.result()
-                # 붙긴 했는데 0건이면 셀렉터가 어긋난 것이므로 경고로 표시한다.
-                results.append((name, not note.startswith("0"), note))
+                count, note = future.result()
+                # 붙긴 했는데 0건이면 주소나 셀렉터가 어긋난 것이다.
+                if count == 0:
+                    note += "  ← 접속은 되는데 아무것도 못 뽑았습니다"
+                results.append((name, count > 0, note))
             except Exception as exc:
                 results.append((name, False, str(exc)[:100]))
 
@@ -180,6 +190,7 @@ def cmd_debug(args: argparse.Namespace) -> int:
         extract_meta,
         parse_scrape,
     )
+    from .util import strip_html
 
     print(f"\n▸ {target.name} — {target.url}\n  전략: {target.strategy}")
     text = fetch_text(
@@ -192,9 +203,17 @@ def cmd_debug(args: argparse.Namespace) -> int:
     )
     print(f"  응답 크기: {len(text):,}자")
 
+    challenge = _detect_challenge(text)
+    if challenge:
+        print(f"  ⚠️  봇 차단 페이지로 보입니다 ({challenge}).")
+        print("      이 소스는 클라우드 IP 에서 못 읽습니다. 로컬 실행을 쓰세요.")
+
     meta = extract_meta(text)
     print(f"  og:image: {meta.image or '(없음)'}")
     print(f"  og:title: {meta.headline or '(없음)'}")
+    print(f"  <a> 태그 수: {text.count('<a ')} · <img> 태그 수: {text.count('<img')}")
+    if target.link_pattern:
+        print(f"  '{target.link_pattern}' 가 들어간 링크: {text.count(target.link_pattern)}개")
 
     blobs = extract_embedded_json(text, target.marker)
     print(f"  script 안 JSON 덩어리: {len(blobs)}개")
@@ -209,12 +228,38 @@ def cmd_debug(args: argparse.Namespace) -> int:
         print(f"    · {item.title[:50]}")
         print(f"      {item.image_url[:100]}")
 
+    if not items:
+        # 무엇을 받았는지 눈으로 확인할 수 있게 앞부분을 보여준다.
+        preview = " ".join(strip_html(text[:4000]).split())[:600]
+        print(f"\n  받은 내용 앞부분:\n    {preview or '(텍스트 없음)'}")
+
     if args.save:
-        path = config.data_dir / f"debug-{target.name}.txt"
+        path = config.data_dir / f"debug-{target.name}.html"
         path.write_text(text, encoding="utf-8")
         print(f"\n  원본 저장: {path}")
     print()
     return 0 if items else 1
+
+
+#: 봇 차단/자바스크립트 요구 페이지에서 흔히 나오는 문구
+_CHALLENGE_HINTS = (
+    "just a moment",
+    "cf-browser-verification",
+    "cf_chl",
+    "enable javascript",
+    "checking your browser",
+    "captcha",
+    "access denied",
+    "are you a robot",
+)
+
+
+def _detect_challenge(text: str) -> str:
+    lowered = text[:6000].lower()
+    for hint in _CHALLENGE_HINTS:
+        if hint in lowered:
+            return hint
+    return ""
 
 
 def cmd_sources(args: argparse.Namespace) -> int:

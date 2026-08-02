@@ -7,10 +7,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "run = 메일 발송 / preview = 리포트만 생성 / check = 소스 점검 / sources = 목록"
+        description: "run = 메일 발송 / preview = 리포트만 / check = 소스 점검 / sources = 목록 / debug = 구조 확인"
         type: choice
-        options: [run, preview, check, sources]
+        options: [run, preview, check, sources, debug]
         default: run
+      debug_source:
+        description: "debug 모드에서 들여다볼 소스 이름 (예: Dribbble, 노트폴리오, 월간디자인)"
+        type: string
+        default: Dribbble
       include_seen:
         description: "이미 보고했던 항목도 포함"
         type: boolean
@@ -57,13 +61,24 @@ jobs:
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           MODE: ${{ github.event.inputs.mode || 'run' }}
           INCLUDE_SEEN: ${{ github.event.inputs.include_seen }}
+          DEBUG_SOURCE: ${{ github.event.inputs.debug_source }}
         run: |
-          # check / sources 는 수집 옵션을 받지 않으므로 플래그를 붙이지 않는다.
-          ARGS=""
-          if [ "$INCLUDE_SEEN" = "true" ] && [ "$MODE" != "check" ] && [ "$MODE" != "sources" ]; then
-            ARGS="--include-seen"
-          fi
-          python -m design_digest "$MODE" $ARGS
+          # 모드마다 받는 옵션이 다르다.
+          case "$MODE" in
+            debug)
+              python -m design_digest debug --source "$DEBUG_SOURCE" --save
+              ;;
+            check|sources)
+              python -m design_digest "$MODE"
+              ;;
+            *)
+              ARGS=""
+              if [ "$INCLUDE_SEEN" = "true" ]; then
+                ARGS="--include-seen"
+              fi
+              python -m design_digest "$MODE" $ARGS
+              ;;
+          esac
 
       - name: 리포트 보관
         if: always()
@@ -73,5 +88,6 @@ jobs:
           path: |
             design_digest_data/reports
             design_digest_data/archive
+            design_digest_data/debug-*.html
           retention-days: 30
           if-no-files-found: ignore

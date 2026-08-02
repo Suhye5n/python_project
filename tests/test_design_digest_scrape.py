@@ -289,6 +289,32 @@ class ScrapeStrategyTests(unittest.TestCase):
         self.assertEqual(parse_scrape("<html><body></body></html>", source), [])
 
 
+class ChallengeDetectionTests(unittest.TestCase):
+    """붙긴 했는데 0장 나올 때, 봇 차단인지 구조 변경인지 구분해준다."""
+
+    def test_detects_cloudflare_interstitial(self):
+        from design_digest.cli import _detect_challenge
+
+        page = "<html><head><title>Just a moment...</title></head><body></body></html>"
+        self.assertEqual(_detect_challenge(page), "just a moment")
+
+    def test_detects_javascript_requirement(self):
+        from design_digest.cli import _detect_challenge
+
+        self.assertTrue(_detect_challenge("<html>Please enable JavaScript to continue</html>"))
+
+    def test_normal_page_is_not_flagged(self):
+        from design_digest.cli import _detect_challenge
+
+        self.assertEqual(_detect_challenge(CARD_GRID_PAGE), "")
+
+    def test_blocked_page_yields_no_items(self):
+        source = ScrapeSource(name="Dribbble", url="https://dribbble.com/shots/popular",
+                              strategy="html", link_pattern="/shots/")
+        page = "<html><head><title>Just a moment...</title></head><body>Checking your browser</body></html>"
+        self.assertEqual(parse_scrape(page, source), [])
+
+
 class ImageFeedTests(unittest.TestCase):
     def test_rsshub_feed_becomes_image_items(self):
         source = FeedSource(name="Instagram · somedesigner",
