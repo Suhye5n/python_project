@@ -240,13 +240,35 @@ class ScrapeStrategyTests(unittest.TestCase):
         source = ScrapeSource(name="x", url="https://x", strategy="embedded_json", limit=2)
         self.assertEqual(len(parse_scrape(NEXT_DATA_PAGE, source)), 2)
 
-    def test_falls_back_to_og_image_when_structure_changed(self):
-        """사이트가 개편돼 경로가 다 어긋나도 대표 이미지는 건진다."""
+    def test_no_og_fallback_by_default(self):
+        """목록을 못 읽었다고 사이트 간판 이미지를 대신 싣지는 않는다."""
         source = ScrapeSource(name="월간디자인", url="https://mdesign.designhouse.co.kr/",
                               strategy="html", link_pattern="/article/")
-        items = parse_scrape(NEXT_DATA_PAGE, source)
+        self.assertEqual(parse_scrape(NEXT_DATA_PAGE, source), [])
+
+    def test_og_fallback_when_explicitly_enabled(self):
+        page = (
+            '<html><head><meta property="og:image" '
+            'content="https://cdn.example.com/2026/07/exhibition-hero.jpg" />'
+            '<meta property="og:title" content="전시 리뷰" /></head><body></body></html>'
+        )
+        source = ScrapeSource(name="월간디자인", url="https://mdesign.designhouse.co.kr/article/1",
+                              strategy="html", link_pattern="/article/", og_fallback=True)
+        items = parse_scrape(page, source)
         self.assertEqual(len(items), 1)
-        self.assertEqual(items[0].image_url, "https://cdn.example.com/og-cover.jpg")
+        self.assertEqual(items[0].image_url, "https://cdn.example.com/2026/07/exhibition-hero.jpg")
+        self.assertEqual(items[0].title, "전시 리뷰")
+
+    def test_generic_share_image_is_rejected(self):
+        """노트폴리오에서 잡히던 'OG Notefolio Standard.jpg' 같은 간판 이미지."""
+        page = (
+            '<html><head><meta property="og:image" '
+            'content="https://cdn.example.kr/static/feature/seo/OG_Notefolio_Standard.jpg" />'
+            '<meta property="og:title" content="노트폴리오" /></head><body></body></html>'
+        )
+        source = ScrapeSource(name="노트폴리오", url="https://notefolio.net/discover",
+                              strategy="og", og_fallback=True)
+        self.assertEqual(parse_scrape(page, source), [])
 
     def test_json_strategy_on_plain_api_response(self):
         payload = json.dumps({"data": {"pins": [

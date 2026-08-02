@@ -38,6 +38,9 @@ HTML_ACCEPT = "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8"
 _IMAGE_HINT = re.compile(r"(?i)\.(jpe?g|png|webp|avif|gif)(\?|$)|/image|/photo|cdn")
 #: 아이콘·로고·추적픽셀 배제
 _BAD_IMAGE = re.compile(r"(?i)(sprite|pixel|spacer|1x1|avatar|icon|logo|badge|placeholder|blank)")
+#: 사이트가 공유용으로 하나 걸어두는 대표 이미지. 콘텐츠가 아니라 간판이라
+#: 이걸 집으면 매일 같은 그림이 리포트에 실린다.
+_PLACEHOLDER_IMAGE = re.compile(r"(?i)(/seo/|[-_/]og[-_.]|opengraph|share[-_]image|default|standard)")
 #: "1,234" "1.2k" "3.4M" 같은 표기
 _NUMBER = re.compile(r"(?i)^\s*([\d,.]+)\s*([km])?\s*$")
 #: 이미지 URL 을 담고 있을 법한 키 이름 (자동 탐색용)
@@ -409,7 +412,7 @@ def parse_html_cards(html: str, source: ScrapeSource) -> list[ImageItem]:
 
 def parse_og_page(html: str, source: ScrapeSource) -> list[ImageItem]:
     meta = extract_meta(html)
-    if not meta.image:
+    if not meta.image or _PLACEHOLDER_IMAGE.search(meta.image):
         return []
     return [
         ImageItem(
@@ -445,8 +448,10 @@ def parse_scrape(text: str, source: ScrapeSource) -> list[ImageItem]:
     else:
         items = parse_og_page(text, source)
 
-    # 어느 전략이든 빈손이면 최소한 대표 이미지라도 건진다.
-    if not items and strategy != "og" and "<" in text[:200]:
+    # 목록을 못 읽었을 때 페이지 대표 이미지로 때우는 건 기본적으로 하지 않는다.
+    # 갤러리 페이지의 og:image 는 대개 사이트 간판이라, 매일 같은 그림이 실린다.
+    # 상세 페이지처럼 대표 이미지가 곧 콘텐츠인 경우에만 켜서 쓴다.
+    if not items and source.og_fallback and strategy != "og" and "<" in text[:200]:
         items = parse_og_page(text, source)
 
     # 같은 이미지가 여러 번 나오는 경우 제거

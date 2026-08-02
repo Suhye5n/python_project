@@ -86,6 +86,9 @@ class ScrapeSource:
     min_popularity: int = 0
     weight: float = 1.0
     enabled: bool = True
+    #: 목록 추출이 실패했을 때 페이지 대표 이미지(og:image)로 대신할지.
+    #: 갤러리 페이지에서는 사이트 간판이 잡히므로 기본은 끔.
+    og_fallback: bool = False
     #: 로그인이 필요한 사이트용. 값이 아니라 '환경변수 이름'을 적는다.
     cookie_env: str = ""
 
@@ -175,6 +178,7 @@ def load_sources(path: Path | str) -> SourceSet:
             min_popularity=int(entry.get("min_popularity", 0)),
             weight=float(entry.get("weight", 1.0)),
             enabled=bool(entry.get("enabled", True)),
+            og_fallback=bool(entry.get("og_fallback", False)),
             cookie_env=entry.get("cookie_env", ""),
         )
         for entry in data.get("scrape", [])

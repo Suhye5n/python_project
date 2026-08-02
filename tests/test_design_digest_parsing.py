@@ -263,7 +263,9 @@ class SourcesConfigTests(unittest.TestCase):
         """Reddit 을 꺼두었으므로 이미지는 스크랩 소스가 책임진다."""
         sources = load_sources(DEFAULT_SOURCES_PATH)
         enabled = [s for s in sources.scrapes if s.enabled]
-        self.assertGreaterEqual(len(enabled), 3)
+        # 클라우드 IP 에서 실제로 동작하는 것만 켜둔다 (자바스크립트 봇 검증에
+        # 막히는 곳은 enabled = false).
+        self.assertGreaterEqual(len(enabled), 2)
         for scrape in enabled:
             self.assertIn(scrape.strategy, {"json", "embedded_json", "html", "og"})
             self.assertTrue(scrape.url.startswith("https://"))
