@@ -27,9 +27,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -37,7 +37,7 @@ jobs:
 
       # 이미 보고한 글을 다음 날 또 보내지 않으려면 SQLite 기록이 실행 간에 남아야 한다.
       - name: 수집 이력 복원
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: design_digest_data
           key: design-digest-data-${{ github.run_id }}
@@ -64,7 +64,7 @@ jobs:
 
       - name: 리포트 보관
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: design-digest-report
           path: |
