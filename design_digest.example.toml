@@ -1,0 +1,26 @@
+# design_digest 설정 예시
+#
+# 이 파일을 `design_digest.toml` 로 복사하면 자동으로 읽습니다.
+# 비밀값(SMTP_PASSWORD)은 여기 적지 말고 환경변수로 넣으세요. 환경변수가 항상 우선입니다.
+
+[digest]
+timezone = "Asia/Seoul"
+lookback_hours = 30              # 몇 시간 이내에 올라온 글까지 볼지
+max_articles_per_category = 6    # 카테고리(트렌드/방법론/철학)당 글 수
+max_images = 12                  # 리포트에 담을 이미지 장수
+max_per_source = 3               # 한 매체가 도배하지 않도록 제한
+guaranteed_images_per_source = 1 # 이미지 소스마다 보장할 장수 (0이면 순수 점수순)
+skip_seen = true                 # 이미 보고한 항목 건너뛰기
+download_images = true           # 이미지를 받아 메일에 인라인 첨부
+max_inline_total_bytes = 8388608 # 인라인 첨부 총량 (8MB). 넘치면 링크로 대체
+http_timeout = 20
+max_workers = 8
+# data_dir = "design_digest_data"
+
+[mail]
+host = "smtp.gmail.com"
+port = 587
+use_starttls = true
+subject_prefix = "[디자인 다이제스트]"
+# username = "you@gmail.com"     # 환경변수 SMTP_USER 로 넣는 편이 안전합니다
+# recipients = ["you@gmail.com"] # 환경변수 MAIL_TO 로도 지정할 수 있습니다

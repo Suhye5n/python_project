@@ -1,0 +1,23 @@
+name: 디자인 다이제스트 테스트
+
+on:
+  push:
+    paths:
+      - "design_digest/**"
+      - "tests/**"
+      - ".github/workflows/design-digest*.yml"
+  pull_request:
+    paths:
+      - "design_digest/**"
+      - "tests/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 단위 테스트 (네트워크 사용 안 함)
+        run: python -m unittest discover -s tests -t . -v
