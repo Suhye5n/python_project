@@ -123,11 +123,13 @@ url = "https://thecreativeindependent.com/feed.xml"
 category = "philosophy"
 
 # -------------------------------------------------------------- 국내 매체
-[[feed]]
-name = "요즘IT"
-url = "https://yozm.wishket.com/magazine/feed/"
-category = "methodology"
-weight = 1.1
+# 요즘IT: /magazine/feed/ 가 브라우저 헤더로 재시도해도 405 Not Allowed.
+# 그 경로가 GET 을 받지 않는 것으로 보인다. 올바른 RSS 주소를 알면 되살릴 것.
+# [[feed]]
+# name = "요즘IT"
+# url = "https://yozm.wishket.com/magazine/feed/"
+# category = "methodology"
+# weight = 1.1
 
 [[feed]]
 name = "네이버 디자인프레스"
@@ -136,42 +138,48 @@ category = "trend"
 
 # ---------------------------------------------------- 이미지 (인기순 게시물)
 #
-# GitHub Actions 같은 데이터센터 IP 에서는 공개 엔드포인트가 403 Blocked 로 막힌다.
-# https://www.reddit.com/prefs/apps 에서 script 앱을 만들고 REDDIT_CLIENT_ID /
-# REDDIT_CLIENT_SECRET 를 넣으면 정식 API 로 붙는다. (자세한 건 README 3-1)
+# 2026-08 기준 Reddit 은 GitHub Actions 같은 데이터센터 IP 의 공개 엔드포인트
+# 요청을 403 Blocked 로 막는다. 그래서 기본값은 '꺼짐'이다.
+#
+# 되살리는 방법은 둘 중 하나:
+#   1) https://www.reddit.com/prefs/apps 에서 script 앱을 만들고
+#      REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET 를 넣는다 (README 3-1).
+#      인증 코드는 이미 들어가 있어서 값만 넣으면 정식 API 로 붙는다.
+#   2) 집 컴퓨터에서 돌린다. 개인 IP 는 대개 막히지 않는다.
+# 둘 중 하나가 되면 아래 주석만 풀면 된다.
 
-[[reddit]]
-subreddit = "Design"
-min_score = 80
-
-[[reddit]]
-subreddit = "graphic_design"
-min_score = 150
-
-[[reddit]]
-subreddit = "web_design"
-min_score = 60
-
-[[reddit]]
-subreddit = "UI_Design"
-min_score = 40
-
-[[reddit]]
-subreddit = "typography"
-min_score = 60
-
-[[reddit]]
-subreddit = "industrialdesign"
-min_score = 80
-
-[[reddit]]
-subreddit = "InteriorDesign"
-min_score = 200
-
-[[reddit]]
-subreddit = "userexperience"
-min_score = 40
-
+# [[reddit]]
+# subreddit = "Design"
+# min_score = 80
+#
+# [[reddit]]
+# subreddit = "graphic_design"
+# min_score = 150
+#
+# [[reddit]]
+# subreddit = "web_design"
+# min_score = 60
+#
+# [[reddit]]
+# subreddit = "UI_Design"
+# min_score = 40
+#
+# [[reddit]]
+# subreddit = "typography"
+# min_score = 60
+#
+# [[reddit]]
+# subreddit = "industrialdesign"
+# min_score = 80
+#
+# [[reddit]]
+# subreddit = "InteriorDesign"
+# min_score = 200
+#
+# [[reddit]]
+# subreddit = "userexperience"
+# min_score = 40
+#
 # --------------------------------------- 이미지 (공개 API 가 없는 사이트)
 #
 # 아래 네 곳은 공개 API 가 없거나 닫혀서, 사이트가 브라우저에 내려주는 데이터를

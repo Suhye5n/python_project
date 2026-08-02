@@ -253,12 +253,23 @@ class SourcesConfigTests(unittest.TestCase):
     def test_bundled_sources_file_loads(self):
         sources = load_sources(DEFAULT_SOURCES_PATH)
         self.assertGreater(len(sources.feeds), 10)
-        self.assertGreater(len(sources.reddits), 3)
         self.assertTrue(sources.hackernews.enabled)
         # 모든 피드에 카테고리가 붙어 있어야 분류 폴백이 동작한다.
         for feed in sources.feeds:
             self.assertIn(feed.category, {"trend", "methodology", "philosophy", "general"})
             self.assertTrue(feed.url.startswith("https://"))
+
+    def test_bundled_file_has_working_image_sources(self):
+        """Reddit 을 꺼두었으므로 이미지는 스크랩 소스가 책임진다."""
+        sources = load_sources(DEFAULT_SOURCES_PATH)
+        enabled = [s for s in sources.scrapes if s.enabled]
+        self.assertGreaterEqual(len(enabled), 3)
+        for scrape in enabled:
+            self.assertIn(scrape.strategy, {"json", "embedded_json", "html", "og"})
+            self.assertTrue(scrape.url.startswith("https://"))
+            # html 전략은 어떤 링크를 항목으로 볼지 지정해야 의미가 있다.
+            if scrape.strategy == "html":
+                self.assertTrue(scrape.link_pattern)
 
     def test_reddit_label_defaults_to_subreddit(self):
         self.assertEqual(RedditSource(subreddit="typography").label, "r/typography")

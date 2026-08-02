@@ -83,13 +83,19 @@ MAIL_TO        받을 주소
 수집 이력(SQLite)은 `actions/cache` 로 실행 간에 보존됩니다. 캐시가 만료돼 초기화되면
 하루치 정도 예전 글이 다시 올 수 있는데, 큰 문제는 아닙니다.
 
-## 3-1. Reddit 인증 (Actions에서 돌린다면 사실상 필수)
+## 3-1. Reddit (기본값 꺼짐)
 
 Reddit은 **데이터센터 IP에서 오는 공개 `.json` 요청을 막습니다.** GitHub Actions 러너가 정확히
-여기 해당해서, 인증 없이 돌리면 서브레딧 8곳이 전부 `403 Blocked`로 실패합니다.
-(내 컴퓨터에서 돌릴 때는 대체로 그냥 됩니다.)
+여기 해당해서 서브레딧이 전부 `403 Blocked`로 실패합니다. 그래서 `sources.toml`에서
+`[[reddit]]` 블록을 **주석 처리해 두었습니다.** 이미지는 Behance·노트폴리오·월간디자인·Dribbble이
+담당합니다.
 
-앱을 등록하면 정식 API로 붙습니다. 2분 걸립니다.
+되살리는 방법은 두 가지입니다.
+
+**① 집 컴퓨터에서 돌리기** — 개인 IP는 대개 막히지 않습니다. `sources.toml`의 `[[reddit]]`
+주석만 풀면 됩니다.
+
+**② 앱 등록해서 정식 API 쓰기** — 인증 코드는 이미 들어가 있어서 값만 넣으면 됩니다. 2분.
 
 1. https://www.reddit.com/prefs/apps → 맨 아래 **create another app...**
 2. 이름 아무거나, 타입은 **script** 선택, redirect uri는 `http://localhost:8080`
@@ -108,7 +114,7 @@ Reddit은 **데이터센터 IP에서 오는 공개 `.json` 요청을 막습니�
 
 ### 글
 
-`sources.toml` 에 적힌 RSS/Atom 피드 20곳을 병렬로 읽습니다. Dezeen, NN/g, Smashing Magazine,
+`sources.toml` 에 적힌 RSS/Atom 피드 19곳을 병렬로 읽습니다. Dezeen, NN/g, Smashing Magazine,
 A List Apart, Design Observer, 요즘IT 등 트렌드 · 방법론 · 철학이 고루 섞여 있습니다.
 
 수집한 글은 제목/본문 키워드로 세 갈래로 분류합니다.
@@ -125,12 +131,12 @@ A List Apart, Design Observer, 요즘IT 등 트렌드 · 방법론 · 철학이 
 
 네 갈래에서 모읍니다.
 
-| 갈래 | 어디 | 인기 근거 |
-| --- | --- | --- |
-| 공개 JSON | Reddit 디자인 서브레딧 8곳 | 업보트·댓글 수 |
-| 스크랩 | Behance, Dribbble, 노트폴리오, 월간디자인 | 좋아요 수(있으면) |
-| 이미지 피드 | Instagram, Pinterest (RSSHub 경유) | 없음 — 자리 보장으로 노출 |
-| 글에서 추출 | 오늘 많이 언급된 글의 대표 이미지 | HN 점수 |
+| 갈래 | 어디 | 인기 근거 | 기본값 |
+| --- | --- | --- | --- |
+| 스크랩 | Behance, Dribbble, 노트폴리오, 월간디자인 | 좋아요 수(있으면) | 켜짐 |
+| 글에서 추출 | 오늘 많이 언급된 글의 대표 이미지 | HN 점수 | 켜짐 |
+| 공개 JSON | Reddit 디자인 서브레딧 8곳 | 업보트·댓글 수 | 꺼짐 (§3-1) |
+| 이미지 피드 | Instagram, Pinterest (RSSHub 경유) | 없음 — 자리 보장으로 노출 | 꺼짐 (§4-1) |
 
 이미지는 내려받아 메일에 **인라인 첨부(cid)** 합니다. 원격 링크로만 걸면 메일 앱이 이미지를 막아
 빈칸으로 보이기 때문입니다. 총 8MB를 넘으면 넘치는 이미지는 링크로 대체합니다.
@@ -291,7 +297,7 @@ design_digest/
 python -m unittest discover -s tests -t . -v
 ```
 
-106개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
+107개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
 메일 조립을 고정된 픽스처로 검증합니다.
 
 스크랩 테스트가 확인하는 것은 "Behance가 오늘도 되는가"가 아니라 "이런 구조면 뽑아낼 수
