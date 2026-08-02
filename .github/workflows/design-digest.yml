@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "run = 메일 발송 / preview = 리포트만 생성"
+        description: "run = 메일 발송 / preview = 리포트만 생성 / check = 소스 점검 / sources = 목록"
         type: choice
-        options: [run, preview]
+        options: [run, preview, check, sources]
         default: run
       include_seen:
         description: "이미 보고했던 항목도 포함"
@@ -52,10 +52,15 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
           DIGEST_TIMEZONE: Asia/Seoul
+          MODE: ${{ github.event.inputs.mode || 'run' }}
+          INCLUDE_SEEN: ${{ github.event.inputs.include_seen }}
         run: |
-          python -m design_digest \
-            ${{ github.event.inputs.mode || 'run' }} \
-            ${{ github.event.inputs.include_seen == 'true' && '--include-seen' || '' }}
+          # check / sources 는 수집 옵션을 받지 않으므로 플래그를 붙이지 않는다.
+          ARGS=""
+          if [ "$INCLUDE_SEEN" = "true" ] && [ "$MODE" != "check" ] && [ "$MODE" != "sources" ]; then
+            ARGS="--include-seen"
+          fi
+          python -m design_digest "$MODE" $ARGS
 
       - name: 리포트 보관
         if: always()
