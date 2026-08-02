@@ -152,7 +152,7 @@ def cmd_check(args: argparse.Namespace) -> int:
                     note += "  ← 접속은 되는데 아무것도 못 뽑았습니다"
                 results.append((name, count > 0, note))
             except Exception as exc:
-                results.append((name, False, str(exc)[:100]))
+                results.append((name, False, str(exc)[:160]))
 
     results.sort(key=lambda row: (row[1], row[0]))
     ok_count = sum(1 for _, ok, _ in results if ok)
@@ -184,7 +184,7 @@ def cmd_debug(args: argparse.Namespace) -> int:
 
     import json
 
-    from .net import fetch_text
+    from .net import FetchError, fetch_text
     from .sources.scrape import (
         HTML_ACCEPT,
         autodetect_items,
@@ -196,14 +196,19 @@ def cmd_debug(args: argparse.Namespace) -> int:
     from .util import strip_html
 
     print(f"\n▸ {target.name} — {target.url}\n  전략: {target.strategy}")
-    text = fetch_text(
-        target.url,
-        timeout=config.http_timeout,
-        retries=config.http_retries,
-        user_agent=config.user_agent,
-        accept=HTML_ACCEPT,
-        max_bytes=12 * 1024 * 1024,
-    )
+    try:
+        text = fetch_text(
+            target.url,
+            timeout=config.http_timeout,
+            retries=config.http_retries,
+            user_agent=config.user_agent,
+            accept=HTML_ACCEPT,
+            max_bytes=12 * 1024 * 1024,
+        )
+    except FetchError as exc:
+        # 여기서 죽으면 원인을 못 보므로, 서버가 뭐라고 했는지 그대로 보여준다.
+        print(f"\n  ❌ 요청 자체가 실패했습니다.\n     {exc}\n")
+        return 1
     print(f"  응답 크기: {len(text):,}자")
 
     challenge = _detect_challenge(text)

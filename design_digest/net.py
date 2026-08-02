@@ -36,6 +36,20 @@ class FetchError(RuntimeError):
     """네트워크 요청이 최종적으로 실패했을 때."""
 
 
+def _error_snippet(exc: urllib.error.HTTPError) -> str:
+    """오류 응답 본문 앞부분.
+
+    API 는 대개 왜 거절했는지를 본문에 적어준다
+    (`{"message":"cursor is required"}` 같은 것). 상태코드만 보면 알 수 없다.
+    """
+    try:
+        body = exc.read(400)
+    except Exception:
+        return ""
+    text = body.decode("utf-8", errors="replace").strip()
+    return " ".join(text.split())[:200]
+
+
 def _decompress(raw: bytes, encoding: str) -> bytes:
     encoding = (encoding or "").lower()
     try:
@@ -80,6 +94,7 @@ def fetch_bytes(
         request_headers.update(headers)
 
     last_error: Exception | None = None
+    last_detail = ""
     browser_retry_done = False
     attempt = 0
     while attempt <= retries:
@@ -97,6 +112,7 @@ def fetch_bytes(
                 return body, dict(response.headers.items())
         except urllib.error.HTTPError as exc:
             last_error = exc
+            last_detail = _error_snippet(exc) or last_detail
             # 헤더 때문에 막힌 것으로 보이면 브라우저 흉내로 딱 한 번 더.
             if (
                 allow_browser_retry
@@ -122,7 +138,11 @@ def fetch_bytes(
             time.sleep(delay)
         attempt += 1
 
-    raise FetchError(f"{url} 요청 실패: {last_error}")
+    # 이유를 앞에 둔다. URL 이 길면 로그에서 정작 원인이 잘려나간다.
+    message = f"{last_error}"
+    if last_detail:
+        message += f" | 응답: {last_detail}"
+    raise FetchError(f"{message} — {url}")
 
 
 def fetch_text(url: str, **kwargs: Any) -> str:

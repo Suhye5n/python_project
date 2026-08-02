@@ -56,6 +56,11 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         if self.path == "/blocked":  # 무엇을 해도 막히는 경우 (레딧 403)
             return self._respond(403)
 
+        # API 가 거절 사유를 본문에 적어주는 경우
+        if self.path.startswith("/api-rejects"):
+            body = json.dumps({"message": "cursor parameter is required"}).encode()
+            return self._respond(400, body, "application/json")
+
         if self.path.startswith("/oauth/"):
             if self.headers.get("Authorization", "").startswith("Bearer test-token"):
                 payload = {"data": {"children": [{"data": {
@@ -126,6 +131,16 @@ class BrowserRetryTests(ServerTestCase):
         with self.assertRaises(FetchError):
             fetch_bytes(f"{self.base}/missing", retries=2)
         self.assertEqual(len(_Handler.requests), 1)
+
+    def test_error_body_is_included_in_message(self):
+        """API 가 왜 거절했는지는 상태코드가 아니라 본문에 적혀 있다."""
+        long_url = f"{self.base}/api-rejects?" + "&".join(f"p{i}=value{i}" for i in range(20))
+        with self.assertRaises(FetchError) as caught:
+            fetch_bytes(long_url, retries=0)
+        message = str(caught.exception)
+        self.assertIn("cursor parameter is required", message)
+        # 이유가 URL 앞에 와야 로그에서 잘려도 원인이 보인다.
+        self.assertLess(message.index("400"), message.index("api-rejects"))
 
     def test_normal_response_makes_one_request(self):
         text = fetch_text(f"{self.base}/ok")
