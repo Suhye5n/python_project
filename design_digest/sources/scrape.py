@@ -23,7 +23,7 @@ import os
 import re
 from html.parser import HTMLParser
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 from ..config import Config
 from ..models import ImageItem
@@ -330,6 +330,51 @@ def _first_by_key(raw: dict, keys: set[str], *, want_str: bool = True) -> Any:
     return "" if want_str else 0
 
 
+def _looks_like_page_link(value: str, base_host: str) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    if looks_like_image_url(value):
+        return False
+    if value.startswith("/") and not value.startswith("//"):
+        return True
+    if value.startswith("http") and base_host and base_host in value:
+        return True
+    return False
+
+
+def _resolve_link(raw: dict, source: ScrapeSource) -> str:
+    """항목이 가리키는 '페이지' 주소를 찾는다.
+
+    이걸 못 찾으면 리포트에서 제목을 눌렀을 때 이미지 파일만 열린다.
+    작품 페이지로 가야 하므로 여러 방법을 순서대로 시도한다.
+    """
+    fields = source.fields
+
+    explicit = dig(raw, fields["link"]) if fields.get("link") else None
+    if isinstance(explicit, str) and explicit:
+        return explicit
+
+    # 항목에 id/slug 만 있고 주소가 없는 사이트를 위해 주소를 조립한다.
+    if source.link_template:
+        try:
+            link = source.link_template.format(**raw)
+            if "{" not in link:
+                return link
+        except (KeyError, IndexError, ValueError):
+            pass
+
+    by_name = _first_by_key(raw, _LINK_KEYS)
+    if by_name:
+        return by_name
+
+    # 키 이름이 낯설어도 값 모양으로 찾아본다.
+    base_host = urlsplit(source.base_url or source.url).netloc
+    for value in raw.values():
+        if _looks_like_page_link(value, base_host):
+            return value
+    return ""
+
+
 def map_item(raw: dict, source: ScrapeSource) -> ImageItem | None:
     """설정된 필드 매핑(없으면 자동 탐색)으로 ImageItem 을 만든다."""
     fields = source.fields
@@ -345,9 +390,7 @@ def map_item(raw: dict, source: ScrapeSource) -> ImageItem | None:
     if not isinstance(title, str) or not title:
         title = _first_by_key(raw, _TITLE_KEYS)
 
-    link = dig(raw, fields["link"]) if fields.get("link") else None
-    if not isinstance(link, str) or not link:
-        link = _first_by_key(raw, _LINK_KEYS)
+    link = _resolve_link(raw, source)
 
     popularity = parse_count(dig(raw, fields["score"])) if fields.get("score") else 0
     if not popularity:

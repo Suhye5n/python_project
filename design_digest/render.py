@@ -88,6 +88,8 @@ def _header_html(digest: Digest, timezone: str) -> str:
         f"수집 {stats.get('collected_articles', 0)}건 중 글 {len(digest.articles)}편, "
         f"이미지 {len(digest.images)}장을 골랐어요."
     )
+    if stats.get("filtered_out"):
+        line += f" (시각디자인 밖 {stats['filtered_out']}건 제외)"
     return f"""
       <tr>
         <td style="padding:28px 28px 8px 28px;">

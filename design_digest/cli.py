@@ -63,6 +63,8 @@ def _print_summary(digest, report_path: Path | None = None) -> None:
           f"(후보 {stats.get('candidates', 0)}건에서 선별, {stats.get('elapsed_sec', 0)}초)")
     for category, articles in digest.by_category().items():
         print(f"   - {CATEGORY_LABELS.get(category, category)}: {len(articles)}편")
+    if stats.get("filtered_out"):
+        print(f"   - 관심 분야 밖이라 제외: {stats['filtered_out']}건")
     if digest.stats.get("downloaded_images"):
         print(f"   - 내려받은 이미지: {stats['downloaded_images']}장")
     if digest.failures:

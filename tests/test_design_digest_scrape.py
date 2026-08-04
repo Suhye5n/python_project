@@ -198,6 +198,60 @@ class ScrapeStrategyTests(unittest.TestCase):
         # "1.2k" 같은 표기도 숫자로
         self.assertEqual([i.popularity for i in items], [1200, 340, 89])
 
+    def test_link_template_builds_page_url_from_id(self):
+        """Behance 처럼 항목에 주소 없이 id/slug 만 있을 때.
+
+        이걸 못 만들면 리포트에서 제목을 눌렀을 때 작품 페이지가 아니라
+        이미지 파일이 열린다.
+        """
+        payload = json.dumps([
+            {"id": 12345, "slug": "poster-series", "name": "Poster series",
+             "covers": {"original": "https://mir-s3-cdn.behance.net/1.jpg"},
+             "stats": {"appreciations": 900}},
+            {"id": 67890, "slug": "type-specimen", "name": "Type specimen",
+             "covers": {"original": "https://mir-s3-cdn.behance.net/2.jpg"},
+             "stats": {"appreciations": 400}},
+            {"id": 11111, "slug": "brand-book", "name": "Brand book",
+             "covers": {"original": "https://mir-s3-cdn.behance.net/3.jpg"},
+             "stats": {"appreciations": 120}},
+        ])
+        source = ScrapeSource(
+            name="Behance · 그래픽", url="https://www.behance.net/galleries/graphic-design",
+            base_url="https://www.behance.net", strategy="json",
+            fields={"title": "name", "score": "stats.appreciations"},
+            link_template="https://www.behance.net/gallery/{id}/{slug}",
+        )
+        items = parse_scrape(payload, source)
+        self.assertEqual(items[0].url, "https://www.behance.net/gallery/12345/poster-series")
+        self.assertEqual(items[1].url, "https://www.behance.net/gallery/67890/type-specimen")
+        # 이미지 파일 주소가 링크로 새어나오면 안 된다
+        for item in items:
+            self.assertNotIn(".jpg", item.url)
+
+    def test_link_template_ignored_when_keys_missing(self):
+        payload = json.dumps([
+            {"name": "A", "cover": "https://cdn/1.jpg", "permalink": "/work/a"},
+            {"name": "B", "cover": "https://cdn/2.jpg", "permalink": "/work/b"},
+            {"name": "C", "cover": "https://cdn/3.jpg", "permalink": "/work/c"},
+        ])
+        source = ScrapeSource(name="x", url="https://x", base_url="https://x",
+                              strategy="json", link_template="https://x/gallery/{id}/{slug}")
+        items = parse_scrape(payload, source)
+        # 틀이 안 맞으면 키 이름으로 찾은 링크를 쓴다
+        self.assertEqual(items[0].url, "https://x/work/a")
+
+    def test_finds_page_link_by_value_shape(self):
+        """키 이름이 낯설어도 값 모양으로 페이지 링크를 알아본다."""
+        payload = json.dumps([
+            {"headline": "작업 A", "media": "https://cdn/1.jpg", "detailPath": "/project/1"},
+            {"headline": "작업 B", "media": "https://cdn/2.jpg", "detailPath": "/project/2"},
+            {"headline": "작업 C", "media": "https://cdn/3.jpg", "detailPath": "/project/3"},
+        ])
+        source = ScrapeSource(name="x", url="https://site.example/list",
+                              base_url="https://site.example", strategy="json")
+        items = parse_scrape(payload, source)
+        self.assertEqual(items[0].url, "https://site.example/project/1")
+
     def test_falls_back_to_image_url_when_no_link_found(self):
         payload = json.dumps([
             {"caption": "작업 1", "cover": "https://cdn/1.jpg"},

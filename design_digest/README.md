@@ -112,10 +112,37 @@ Reddit은 **데이터센터 IP에서 오는 공개 `.json` 요청을 막습니�
 
 ## 4. 무엇을 어떻게 모으나
 
+### 범위: 시각디자인
+
+그래픽 · 타이포그래피 · 폰트 · 일러스트 · 브랜딩 · 편집 · 패키지가 대상입니다.
+건축, 인테리어, 산업디자인, 웹개발은 제외합니다.
+
+범위는 **두 겹**으로 좁힙니다.
+
+1. **소스 선택** — 산업/인테리어/UX 중심 매체(Core77, Yanko Design, Design Milk, NN/g,
+   CSS-Tricks, UX Planet 등)는 꺼두고, Typographica·I Love Typography·Brand New·Creative Boom
+   같은 시각디자인 전문지를 넣었습니다.
+2. **글 단위 필터** (`[focus]`) — 매체 하나가 여러 분야를 다루기 때문에 소스만 골라서는 부족합니다.
+   Dezeen은 절반이 건축이고 Smashing Magazine은 대부분 웹개발입니다. 그래서 제목·본문 키워드로
+   글 하나하나를 거릅니다.
+
+```toml
+[focus]
+enabled = true
+# include / exclude 를 안 적으면 focus.py 의 기본 목록을 씁니다.
+# include = ["typography", "typeface", "일러스트", "브랜딩"]
+# exclude = ["architecture", "인테리어"]
+always_keep_sources = ["Typographica", "Brand New"]   # 전문지는 필터를 건너뜁니다
+```
+
+판정 순서는 `제목에 배제어 → 탈락`, `제목에 포함어 → 통과`, 그래도 애매하면 본문을 봅니다.
+몇 건이 걸러졌는지는 리포트 상단과 `preview` 출력에 표시됩니다. 범위를 다시 넓히려면
+`enabled = false` 로 두면 됩니다.
+
 ### 글
 
-`sources.toml` 에 적힌 RSS/Atom 피드 19곳을 병렬로 읽습니다. Dezeen, NN/g, Smashing Magazine,
-A List Apart, Design Observer, 요즘IT 등 트렌드 · 방법론 · 철학이 고루 섞여 있습니다.
+`sources.toml` 에 적힌 RSS/Atom 피드 16곳을 병렬로 읽습니다. Creative Boom, Typographica,
+Brand New, Colossal, Design Observer, PRINT, 네이버 디자인프레스 등입니다.
 
 수집한 글은 제목/본문 키워드로 세 갈래로 분류합니다.
 
@@ -133,7 +160,8 @@ A List Apart, Design Observer, 요즘IT 등 트렌드 · 방법론 · 철학이 
 
 | 갈래 | 어디 | 인기 근거 | 기본값 |
 | --- | --- | --- | --- |
-| 스크랩 | Behance, Dribbble, 노트폴리오, 월간디자인 | 좋아요 수(있으면) | 켜짐 |
+| 스크랩 | Behance(그래픽·일러스트·타이포), 노트폴리오, 월간디자인 | 좋아요 수(있으면) | 켜짐 |
+| 스크랩 | Dribbble | — | 꺼짐 (JS 봇 검증) |
 | 글에서 추출 | 오늘 많이 언급된 글의 대표 이미지 | HN 점수 | 켜짐 |
 | 공개 JSON | Reddit 디자인 서브레딧 8곳 | 업보트·댓글 수 | 꺼짐 (§3-1) |
 | 이미지 피드 | Instagram, Pinterest (RSSHub 경유) | 없음 — 자리 보장으로 노출 | 꺼짐 (§4-1) |
@@ -205,6 +233,16 @@ weight = 1.4
 제목·링크·좋아요 수도 이름이 그럴듯한 키에서 알아서 가져옵니다(`likeCount`, `appreciations`,
 `saves` 등, `"1.2k"` 표기도 숫자로). 설정한 경로가 사이트 개편으로 어긋나도 자동 탐색으로
 넘어갑니다.
+
+**링크가 이미지 파일로 가버린다면** `link_template` 을 쓰세요. 항목에 주소 없이 id/slug만 있는
+사이트가 있는데, 그럴 때 앱은 마지막 수단으로 이미지 주소를 링크에 씁니다(항목들이 전부 같은
+URL로 뭉쳐 사라지는 것을 막기 위해서입니다). 작품 페이지로 보내려면 주소 틀을 알려주면 됩니다.
+
+```toml
+link_template = "https://www.behance.net/gallery/{id}/{slug}"
+```
+
+`{ }` 안에는 항목의 키 이름을 씁니다. 키가 없으면 이 틀은 조용히 무시되고 다음 방법으로 넘어갑니다.
 
 목록을 못 읽었을 때 페이지 대표 이미지(og:image)로 때우는 동작은 **기본적으로 꺼져 있습니다.**
 갤러리 페이지의 og:image는 대개 사이트 간판이라, 켜두면 매일 같은 그림이 리포트에 실립니다.
@@ -328,7 +366,7 @@ design_digest/
 python -m unittest discover -s tests -t . -v
 ```
 
-110개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
+130개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
 메일 조립을 고정된 픽스처로 검증합니다.
 
 스크랩 테스트가 확인하는 것은 "Behance가 오늘도 되는가"가 아니라 "이런 구조면 뽑아낼 수

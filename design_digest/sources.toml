@@ -8,23 +8,28 @@
 #
 # weight 는 랭킹 가중치(기본 1.0). 신뢰하는 매체를 조금 더 위로 올리고 싶을 때 조정.
 # 링크가 죽었는지는 `python -m design_digest check` 로 확인할 수 있다.
+#
+# 범위는 시각디자인(그래픽 · 타이포 · 폰트 · 일러스트 · 브랜딩 · 편집 · 패키지)이다.
+# 산업/인테리어/UX 중심 매체는 꺼두었고, 여러 분야를 함께 다루는 매체는 켜두되
+# 아래 [focus] 필터가 글 단위로 걸러낸다.
 
 # ---------------------------------------------------------------- 트렌드
 [[feed]]
 name = "Dezeen"
 url = "https://www.dezeen.com/feed/"
 category = "trend"
-weight = 1.1
+weight = 0.9   # 건축 비중이 커서 낮춤. 그래픽/브랜딩 기사만 [focus] 를 통과한다.
 
 [[feed]]
 name = "designboom"
 url = "https://www.designboom.com/feed/"
 category = "trend"
 
-[[feed]]
-name = "Design Milk"
-url = "https://design-milk.com/feed/"
-category = "trend"
+# Design Milk: 인테리어/제품 중심이라 껐다.
+# [[feed]]
+# name = "Design Milk"
+# url = "https://design-milk.com/feed/"
+# category = "trend"
 
 # It's Nice That: 2026-08 확인 시 /rss 가 404. 다른 주소를 찾으면 되살릴 것.
 # [[feed]]
@@ -33,20 +38,53 @@ category = "trend"
 # category = "trend"
 # weight = 1.1
 
-[[feed]]
-name = "Core77"
-url = "https://www.core77.com/feed"
-category = "trend"
-
-[[feed]]
-name = "Yanko Design"
-url = "https://www.yankodesign.com/feed/"
-category = "trend"
+# Core77 / Yanko Design: 산업·제품 디자인 중심이라 껐다.
+# [[feed]]
+# name = "Core77"
+# url = "https://www.core77.com/feed"
+# category = "trend"
+#
+# [[feed]]
+# name = "Yanko Design"
+# url = "https://www.yankodesign.com/feed/"
+# category = "trend"
 
 [[feed]]
 name = "Creative Bloq"
 url = "https://www.creativebloq.com/feed"
 category = "trend"
+weight = 1.1   # 그래픽·타이포 기사가 많다
+
+# ------------------------------------------------- 시각디자인 전문 매체
+[[feed]]
+name = "Creative Boom"
+url = "https://www.creativeboom.com/feed/"
+category = "trend"
+weight = 1.3
+
+[[feed]]
+name = "Colossal"
+url = "https://www.thisiscolossal.com/feed/"
+category = "trend"
+weight = 1.1   # 일러스트·공예·시각예술
+
+[[feed]]
+name = "Typographica"
+url = "https://typographica.org/feed/"
+category = "philosophy"
+weight = 1.3   # 서체 리뷰·비평
+
+[[feed]]
+name = "I Love Typography"
+url = "https://ilovetypography.com/feed/"
+category = "philosophy"
+weight = 1.2
+
+[[feed]]
+name = "Brand New"
+url = "https://www.underconsideration.com/brandnew/atom.xml"
+category = "trend"
+weight = 1.3   # 로고·아이덴티티 리뷰
 
 [[feed]]
 name = "Fast Company · Co.Design"
@@ -59,44 +97,46 @@ url = "https://medium.com/feed/muzli-design-inspiration"
 category = "trend"
 
 # ------------------------------------------------------------- 방법론
-[[feed]]
-name = "Nielsen Norman Group"
-url = "https://www.nngroup.com/feed/rss/"
-category = "methodology"
-weight = 1.3
-
+#
+# UX·웹개발 중심 매체(NN/g, UX Planet, CSS-Tricks, IxDF)는 시각디자인 범위
+# 밖이라 껐다. 아래 둘은 타이포그래피·색·레이아웃 글을 꾸준히 내서 남겨두고,
+# [focus] 필터가 개발 글을 걸러낸다.
 [[feed]]
 name = "Smashing Magazine"
 url = "https://www.smashingmagazine.com/feed/"
 category = "methodology"
-weight = 1.2
-
-[[feed]]
-name = "A List Apart"
-url = "https://alistapart.com/main/feed/"
-category = "methodology"
-weight = 1.2
+weight = 1.0
 
 [[feed]]
 name = "UX Collective"
 url = "https://uxdesign.cc/feed"
 category = "methodology"
-
-[[feed]]
-name = "UX Planet"
-url = "https://uxplanet.org/feed"
-category = "methodology"
-
-[[feed]]
-name = "CSS-Tricks"
-url = "https://css-tricks.com/feed/"
-category = "methodology"
 weight = 0.9
 
-[[feed]]
-name = "Interaction Design Foundation"
-url = "https://www.interaction-design.org/rss/site_news.xml"
-category = "methodology"
+# [[feed]]
+# name = "Nielsen Norman Group"
+# url = "https://www.nngroup.com/feed/rss/"
+# category = "methodology"
+#
+# [[feed]]
+# name = "A List Apart"
+# url = "https://alistapart.com/main/feed/"
+# category = "methodology"
+#
+# [[feed]]
+# name = "UX Planet"
+# url = "https://uxplanet.org/feed"
+# category = "methodology"
+#
+# [[feed]]
+# name = "CSS-Tricks"
+# url = "https://css-tricks.com/feed/"
+# category = "methodology"
+#
+# [[feed]]
+# name = "Interaction Design Foundation"
+# url = "https://www.interaction-design.org/rss/site_news.xml"
+# category = "methodology"
 
 # -------------------------------------------------------------- 철학·비평
 [[feed]]
@@ -190,14 +230,38 @@ category = "trend"
 # 상태 확인:  python -m design_digest check
 # 구조 확인:  python -m design_digest debug --source Behance
 
+# Behance 는 갤러리별로 주소가 나뉜다. 시각디자인 영역만 가져온다.
+# link_template 은 항목에 주소 없이 id/slug 만 있을 때 작품 페이지 주소를 조립한다.
+# (그게 없으면 리포트에서 제목을 눌렀을 때 이미지 파일만 열린다)
 [[scrape]]
-name = "Behance"
+name = "Behance · 그래픽"
 url = "https://www.behance.net/galleries/graphic-design"
 base_url = "https://www.behance.net"
 strategy = "embedded_json"
 weight = 1.4
-limit = 8
+limit = 6
 fields = { title = "name", link = "url", score = "stats.appreciations", published = "published_on" }
+link_template = "https://www.behance.net/gallery/{id}/{slug}"
+
+[[scrape]]
+name = "Behance · 일러스트"
+url = "https://www.behance.net/galleries/illustration"
+base_url = "https://www.behance.net"
+strategy = "embedded_json"
+weight = 1.4
+limit = 6
+fields = { title = "name", link = "url", score = "stats.appreciations", published = "published_on" }
+link_template = "https://www.behance.net/gallery/{id}/{slug}"
+
+[[scrape]]
+name = "Behance · 타이포"
+url = "https://www.behance.net/galleries/typography"
+base_url = "https://www.behance.net"
+strategy = "embedded_json"
+weight = 1.4
+limit = 6
+fields = { title = "name", link = "url", score = "stats.appreciations", published = "published_on" }
+link_template = "https://www.behance.net/gallery/{id}/{slug}"
 
 # Dribbble: 2026-08 확인 결과 자바스크립트 봇 검증 화면만 돌아온다
 # ("we need to verify that you're not a robot"). 헤더로는 못 뚫는다.
@@ -266,6 +330,27 @@ limit = 6
 # ------------------------------------------------- 인기 신호 (언급량)
 [hackernews]
 enabled = true
-queries = ["design", "typography", "user experience", "design system"]
+queries = ["graphic design", "typography", "typeface", "illustration"]
 min_points = 20
 hits_per_query = 40
+
+# ------------------------------------------------------ 관심 분야 좁히기
+#
+# 매체 하나가 여러 분야를 다루기 때문에, 소스 단위가 아니라 **글 단위**로 거른다.
+# 제목에 include 단어가 있으면 통과, exclude 단어가 있으면 탈락.
+# 제목만으로 판단이 안 되면 본문을 본다.
+#
+# 범위를 넓히고 싶으면 enabled = false 로 두거나 include 에 단어를 더하면 된다.
+# 지금 무엇이 걸러지는지는 리포트 하단의 "관심 분야 밖" 건수로 확인할 수 있다.
+[focus]
+enabled = true
+
+# include / exclude 를 아예 적지 않으면 focus.py 의 기본 목록을 쓴다.
+# 기본 목록에는 그래픽·타이포·폰트·일러스트·브랜딩·편집·패키지 관련 단어와
+# 한국어 표현이 들어 있다. 아래처럼 직접 지정할 수도 있다.
+#
+# include = ["typography", "typeface", "일러스트", "브랜딩"]
+# exclude = ["architecture", "인테리어"]
+
+# 이 소스의 글은 필터를 거치지 않는다 (이미 그 분야 전문지인 경우).
+always_keep_sources = ["Typographica", "I Love Typography", "Brand New", "Creative Boom"]

@@ -10,6 +10,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..focus import Focus, from_toml as focus_from_toml
 from ..models import CATEGORY_GENERAL
 
 
@@ -80,6 +81,9 @@ class ScrapeSource:
     link_pattern: str = ""
     #: 항목 -> ImageItem 필드 매핑. json 계열에서만 쓴다.
     fields: dict[str, str] = field(default_factory=dict)
+    #: 항목에 주소가 없고 id/slug 만 있을 때 작품 페이지 주소를 조립하는 틀.
+    #: 예: "https://www.behance.net/gallery/{id}/{slug}"
+    link_template: str = ""
     #: 상대경로를 절대경로로 만들 때 쓸 기준 주소
     base_url: str = ""
     limit: int = 12
@@ -109,6 +113,8 @@ class SourceSet:
     reddits: list[RedditSource] = field(default_factory=list)
     scrapes: list[ScrapeSource] = field(default_factory=list)
     hackernews: HackerNewsSource = field(default_factory=HackerNewsSource)
+    #: 관심 분야 필터 (기본: 시각디자인)
+    focus: Focus = field(default_factory=Focus)
 
     @property
     def article_feeds(self) -> list[FeedSource]:
@@ -193,4 +199,10 @@ def load_sources(path: Path | str) -> SourceSet:
         hits_per_query=int(hn_data.get("hits_per_query", 40)),
     )
 
-    return SourceSet(feeds=feeds, reddits=reddits, scrapes=scrapes, hackernews=hackernews)
+    return SourceSet(
+        feeds=feeds,
+        reddits=reddits,
+        scrapes=scrapes,
+        hackernews=hackernews,
+        focus=focus_from_toml(data),
+    )

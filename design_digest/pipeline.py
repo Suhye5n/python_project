@@ -203,7 +203,10 @@ def build_digest(
         candidates = store.filter_new(candidates)
         raw_images = store.filter_new(raw_images)
 
-    # 5) 분류 + 랭킹 + 선별
+    # 5) 관심 분야로 좁히기 (기본: 시각디자인)
+    candidates, filtered_out = sources.focus.apply(candidates)
+
+    # 6) 분류 + 랭킹 + 선별
     classify.apply(candidates)
     weights = {feed.name: feed.weight for feed in sources.feeds}
     ranked = rank.rank_articles(
@@ -249,6 +252,7 @@ def build_digest(
             "collected_articles": collected_count,
             "collected_images": len(raw_images),
             "candidates": len(candidates),
+            "filtered_out": filtered_out,
             "selected_articles": len(articles),
             "selected_images": len(images),
             "downloaded_images": downloaded,
