@@ -112,37 +112,52 @@ Reddit은 **데이터센터 IP에서 오는 공개 `.json` 요청을 막습니�
 
 ## 4. 무엇을 어떻게 모으나
 
-### 범위: 시각디자인
+### 범위: 시각디자인 + UX
 
-그래픽 · 타이포그래피 · 폰트 · 일러스트 · 브랜딩 · 편집 · 패키지가 대상입니다.
-건축, 인테리어, 산업디자인, 웹개발은 제외합니다.
+**시각디자인**(그래픽 · 타이포그래피 · 폰트 · 일러스트 · 브랜딩 · 편집 · 패키지)과
+**UX**(리서치 · 사용성 · 인터랙션 · 디자인 시스템 · 방법론)를 봅니다.
+건축, 인테리어, 산업디자인, 웹 개발은 제외합니다.
 
 범위는 **두 겹**으로 좁힙니다.
 
-1. **소스 선택** — 산업/인테리어/UX 중심 매체(Core77, Yanko Design, Design Milk, NN/g,
-   CSS-Tricks, UX Planet 등)는 꺼두고, Typographica·I Love Typography·Brand New·Creative Boom
-   같은 시각디자인 전문지를 넣었습니다.
+1. **소스 선택** — 산업/인테리어 매체(Core77, Yanko Design, Design Milk)와 웹개발 매체
+   (CSS-Tricks)는 꺼두고, 시각디자인 전문지(Typographica, I Love Typography, Brand New,
+   Creative Boom, Colossal)를 넣었습니다.
 2. **글 단위 필터** (`[focus]`) — 매체 하나가 여러 분야를 다루기 때문에 소스만 골라서는 부족합니다.
-   Dezeen은 절반이 건축이고 Smashing Magazine은 대부분 웹개발입니다. 그래서 제목·본문 키워드로
-   글 하나하나를 거릅니다.
+   Dezeen은 절반이 건축이고 Smashing Magazine은 프론트엔드 글이 섞입니다. 그래서 제목·본문
+   키워드로 글 하나하나를 거릅니다.
 
 ```toml
 [focus]
 enabled = true
-# include / exclude 를 안 적으면 focus.py 의 기본 목록을 씁니다.
-# include = ["typography", "typeface", "일러스트", "브랜딩"]
-# exclude = ["architecture", "인테리어"]
+groups = ["visual", "ux"]     # 분야를 그룹으로 고른다
 always_keep_sources = ["Typographica", "Brand New"]   # 전문지는 필터를 건너뜁니다
 ```
 
+**범위를 바꾸는 건 `groups` 한 줄입니다.**
+
+| 원하는 것 | 설정 |
+| --- | --- |
+| 시각디자인 + UX (기본) | `groups = ["visual", "ux"]` |
+| 시각디자인만 | `groups = ["visual"]` |
+| UX만 | `groups = ["ux"]` |
+| 전부 다 (필터 끄기) | `enabled = false` |
+
+소스를 지울 필요가 없습니다. UX를 빼도 NN/g는 그대로 남아 있고, 나중에 `"ux"`를 다시 넣으면
+바로 살아납니다. 그룹에 없는 단어를 더하려면 `include = ["모션그래픽"]` 처럼 씁니다.
+
 판정 순서는 `제목에 배제어 → 탈락`, `제목에 포함어 → 통과`, 그래도 애매하면 본문을 봅니다.
-몇 건이 걸러졌는지는 리포트 상단과 `preview` 출력에 표시됩니다. 범위를 다시 넓히려면
-`enabled = false` 로 두면 됩니다.
+단, **배제어가 포함어 안에 파묻혀 있으면 무시합니다** — `information architecture`(UX) 안의
+`architecture`(건축)가 그런 경우입니다. 반대로 `React component library`처럼 배제어와 포함어가
+서로 다른 자리에서 걸리면 배제어가 이깁니다.
+
+몇 건이 걸러졌는지는 리포트 상단과 `preview` 출력에 표시됩니다.
 
 ### 글
 
-`sources.toml` 에 적힌 RSS/Atom 피드 16곳을 병렬로 읽습니다. Creative Boom, Typographica,
-Brand New, Colossal, Design Observer, PRINT, 네이버 디자인프레스 등입니다.
+`sources.toml` 에 적힌 RSS/Atom 피드 20곳을 병렬로 읽습니다. Creative Boom, Typographica,
+Brand New, Colossal, Design Observer, PRINT, NN/g, Smashing Magazine, UX Collective,
+네이버 디자인프레스 등입니다.
 
 수집한 글은 제목/본문 키워드로 세 갈래로 분류합니다.
 
@@ -366,7 +381,7 @@ design_digest/
 python -m unittest discover -s tests -t . -v
 ```
 
-130개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
+136개 테스트 모두 네트워크를 타지 않습니다. 파서·스크랩 전략·분류·랭킹·중복제거·렌더링·
 메일 조립을 고정된 픽스처로 검증합니다.
 
 스크랩 테스트가 확인하는 것은 "Behance가 오늘도 되는가"가 아니라 "이런 구조면 뽑아낼 수

@@ -69,6 +69,42 @@ class FocusTests(unittest.TestCase):
     def test_unrelated_article_is_dropped(self):
         self.assertFalse(self.focus.keeps(article("Quarterly earnings report")))
 
+    def test_keeps_ux_articles_when_ux_group_is_on(self):
+        for title in (
+            "Usability testing with five participants",
+            "Building a design system that survives handoff",
+            "Information architecture for large catalogs",
+            "사용자 조사에서 자주 하는 실수",
+            "디자인 시스템 도입기",
+        ):
+            self.assertTrue(self.focus.keeps(article(title)), title)
+
+    def test_ux_group_can_be_dropped_to_narrow_scope(self):
+        visual_only = Focus(enabled=True, groups=("visual",))
+        self.assertFalse(visual_only.keeps(article("Usability testing with five participants")))
+        self.assertTrue(visual_only.keeps(article("A new variable font for editorial work")))
+
+    def test_exclude_word_buried_in_an_include_phrase_is_ignored(self):
+        """'information architecture' 안의 'architecture' 는 건축이 아니다."""
+        self.assertTrue(self.focus.keeps(article("Information architecture for large catalogs")))
+        # 반대로 서로 다른 자리에서 걸리면 배제어가 이긴다
+        self.assertFalse(
+            self.focus.keeps(article("Architecture studio unveils a new design system"))
+        )
+
+    def test_engineering_still_excluded_with_ux_group(self):
+        for title in (
+            "Building a React component library",
+            "Postgres database indexing tips",
+            "자바스크립트 성능 최적화",
+        ):
+            self.assertFalse(self.focus.keeps(article(title)), title)
+
+    def test_groups_and_include_are_combined(self):
+        focus = Focus(enabled=True, groups=("visual",), include=("모션그래픽",))
+        self.assertTrue(focus.keeps(article("모션그래픽 스터디")))
+        self.assertTrue(focus.keeps(article("New typeface released")))
+
     def test_always_keep_sources_bypass_filter(self):
         focus = Focus(enabled=True, always_keep_sources=("Typographica",))
         item = article("Reviews of 2026", source="Typographica")
@@ -90,7 +126,7 @@ class FocusTests(unittest.TestCase):
         self.assertEqual(dropped, 1)
 
     def test_custom_keyword_lists(self):
-        focus = Focus(enabled=True, include=("모션그래픽",), exclude=("인쇄",))
+        focus = Focus(enabled=True, groups=(), include=("모션그래픽",), exclude=("인쇄",))
         self.assertTrue(focus.keeps(article("모션그래픽 작업 공개")))
         self.assertFalse(focus.keeps(article("인쇄 공정 이야기")))
         self.assertFalse(focus.keeps(article("타이포그래피")))  # include 에 없으면 탈락
@@ -104,7 +140,7 @@ class FocusConfigTests(unittest.TestCase):
     def test_empty_focus_section_turns_it_on(self):
         focus = from_toml({"focus": {}})
         self.assertTrue(focus.enabled)
-        self.assertIn("typography", focus.include)
+        self.assertIn("typography", focus.words)
 
     def test_from_toml_overrides(self):
         focus = from_toml({"focus": {"enabled": False, "include": ["a"], "exclude": ["b"]}})
@@ -117,12 +153,19 @@ class FocusConfigTests(unittest.TestCase):
         # 전문지는 필터를 건너뛰도록 지정되어 있어야 한다
         self.assertIn("Typographica", sources.focus.always_keep_sources)
 
-    def test_bundled_feeds_are_visual_design_oriented(self):
-        """UX·개발 중심 매체가 꺼져 있는지 확인."""
+    def test_bundled_feeds_drop_industrial_and_dev_media(self):
+        """산업·인테리어·웹개발 매체는 꺼져 있어야 한다 (UX 는 남긴다)."""
         sources = load_sources(DEFAULT_SOURCES_PATH)
         names = {feed.name for feed in sources.feeds}
-        for off_topic in ("CSS-Tricks", "UX Planet", "Nielsen Norman Group", "Yanko Design"):
+        for off_topic in ("CSS-Tricks", "Yanko Design", "Core77", "Design Milk"):
             self.assertNotIn(off_topic, names)
+
+    def test_bundled_feeds_keep_ux_media(self):
+        sources = load_sources(DEFAULT_SOURCES_PATH)
+        names = {feed.name for feed in sources.feeds}
+        for ux in ("Nielsen Norman Group", "UX Collective", "UX Planet"):
+            self.assertIn(ux, names)
+        self.assertIn("ux", sources.focus.groups)
 
 
 if __name__ == "__main__":

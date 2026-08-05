@@ -96,46 +96,49 @@ name = "Muzli"
 url = "https://medium.com/feed/muzli-design-inspiration"
 category = "trend"
 
-# ------------------------------------------------------------- 방법론
+# ------------------------------------------------------------- 방법론 · UX
 #
-# UX·웹개발 중심 매체(NN/g, UX Planet, CSS-Tricks, IxDF)는 시각디자인 범위
-# 밖이라 껐다. 아래 둘은 타이포그래피·색·레이아웃 글을 꾸준히 내서 남겨두고,
-# [focus] 필터가 개발 글을 걸러낸다.
+# [focus] 의 groups 에 "ux" 가 들어 있어야 이 매체들의 글이 통과한다.
+# 시각디자인만 보고 싶어지면 groups 에서 "ux" 를 빼면 되고, 소스를 지울
+# 필요는 없다.
+[[feed]]
+name = "Nielsen Norman Group"
+url = "https://www.nngroup.com/feed/rss/"
+category = "methodology"
+weight = 1.3   # UX 리서치의 기준점
+
 [[feed]]
 name = "Smashing Magazine"
 url = "https://www.smashingmagazine.com/feed/"
 category = "methodology"
-weight = 1.0
+weight = 1.1
+
+[[feed]]
+name = "A List Apart"
+url = "https://alistapart.com/main/feed/"
+category = "methodology"
+weight = 1.1
 
 [[feed]]
 name = "UX Collective"
 url = "https://uxdesign.cc/feed"
 category = "methodology"
-weight = 0.9
 
-# [[feed]]
-# name = "Nielsen Norman Group"
-# url = "https://www.nngroup.com/feed/rss/"
-# category = "methodology"
-#
-# [[feed]]
-# name = "A List Apart"
-# url = "https://alistapart.com/main/feed/"
-# category = "methodology"
-#
-# [[feed]]
-# name = "UX Planet"
-# url = "https://uxplanet.org/feed"
-# category = "methodology"
-#
+[[feed]]
+name = "UX Planet"
+url = "https://uxplanet.org/feed"
+category = "methodology"
+
+[[feed]]
+name = "Interaction Design Foundation"
+url = "https://www.interaction-design.org/rss/site_news.xml"
+category = "methodology"
+
+# CSS-Tricks: UX 가 아니라 웹 개발 매체라 껐다. 필요하면 주석을 풀되
+# [focus] 의 exclude 때문에 대부분의 글이 걸러진다.
 # [[feed]]
 # name = "CSS-Tricks"
 # url = "https://css-tricks.com/feed/"
-# category = "methodology"
-#
-# [[feed]]
-# name = "Interaction Design Foundation"
-# url = "https://www.interaction-design.org/rss/site_news.xml"
 # category = "methodology"
 
 # -------------------------------------------------------------- 철학·비평
@@ -345,11 +348,16 @@ hits_per_query = 40
 [focus]
 enabled = true
 
-# include / exclude 를 아예 적지 않으면 focus.py 의 기본 목록을 쓴다.
-# 기본 목록에는 그래픽·타이포·폰트·일러스트·브랜딩·편집·패키지 관련 단어와
-# 한국어 표현이 들어 있다. 아래처럼 직접 지정할 수도 있다.
-#
-# include = ["typography", "typeface", "일러스트", "브랜딩"]
+# 볼 분야를 그룹으로 고른다.
+#   visual = 그래픽 · 타이포 · 폰트 · 일러스트 · 브랜딩 · 편집 · 패키지
+#   ux     = UX · 인터랙션 · 디자인 시스템 · 리서치 · 방법론
+# 시각디자인만 보고 싶으면 groups = ["visual"] 로 줄이면 된다.
+# 소스를 지울 필요 없이 이 한 줄로 범위가 바뀐다.
+groups = ["visual", "ux"]
+
+# 그룹에 없는 단어를 더하고 싶을 때. (그룹과 합쳐진다)
+# include = ["모션그래픽", "3d"]
+# 배제어를 직접 지정하고 싶을 때. 적으면 기본 목록을 대체한다.
 # exclude = ["architecture", "인테리어"]
 
 # 이 소스의 글은 필터를 거치지 않는다 (이미 그 분야 전문지인 경우).
