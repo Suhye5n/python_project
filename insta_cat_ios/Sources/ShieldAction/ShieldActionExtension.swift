@@ -27,7 +27,7 @@ final class ShieldActionExtension: ShieldActionDelegate {
         case .primaryButtonPressed:
             return .close
         case .secondaryButtonPressed:
-            // 쓰다듬기: 잠금은 유지한 채 화면만 다시 그립니다.
+            // 한 번 더 터뜨리기: 잠금은 그대로 두고 화면만 다시 그려 다음 폭발 프레임을 보여줍니다.
             Settings.petCount += 1
             return .defer
         @unknown default:

@@ -2,9 +2,13 @@
 
 인스타그램을 정해진 시간(기본 5분) 넘게 보면 고양이가 나타나 앱을 잠가버리는 아이폰 앱입니다.
 
+![폭발 고양이](preview-explosion.gif)
+
+인스타를 열면 이 화면이 뜹니다. 불은 실제로 끓어오르며 타오릅니다.
+
 ![고양이 자세](preview-cat.png)
 
-앉기 · 걷기A · 걷기B / 화남 · 기쁨 · 잠 — 이미지 파일 없이 `CatArt.swift` 가 코드로 그립니다.
+감시 중일 때 앱 안을 돌아다니는 고양이 — 이미지 파일 없이 `CatArt.swift` 가 코드로 그립니다.
 (위 미리보기는 같은 좌표를 파이썬으로 포팅해 렌더링한 것입니다.)
 
 ---
@@ -21,6 +25,7 @@ iOS 는 안드로이드와 달리 **다른 앱 위에 무언가를 그리는 것
 | 인스타 5분 넘기면 못 보게 막기 | ✅ 가능 | 스크린 타임(FamilyControls)으로 앱 잠금 |
 | 막을 때 고양이가 등장 | ✅ 가능 | 잠금 화면(Shield)을 고양이 그림으로 교체 |
 | 고양이가 돌아다니는 모습 | 🟡 일부 | 앱 안에서는 자유롭게, 홈 화면에서는 위젯 안에서 |
+| 잠금 화면에서 불이 움직이기 | 🟡 일부 | **잠금 화면은 정지 이미지만 가능.** 열 때마다 폭발 프레임이 한 칸씩 넘어갑니다 |
 | 화면 자체를 끄기 | ❌ 불가능 | 앱 잠금까지가 iOS 가 허용하는 최대치 |
 
 > 안드로이드였다면 `SYSTEM_ALERT_WINDOW` + 접근성 서비스로 진짜 오버레이 고양이가 가능합니다.
@@ -46,29 +51,68 @@ DeviceActivityMonitor 확장이 백그라운드에서 깨어남
                         shield 해제 + 사용 시간 카운터 리셋
 ```
 
-인스타를 열면 앱 대신 `ShieldConfigurationExtension` 이 그린 고양이 잠금 화면이 뜹니다.
-버튼은 두 개 — **알겠다냥(닫기)** 과 **고양이 쓰다듬기**(잠금은 안 풀리고 횟수만 올라감).
+인스타를 열면 앱 대신 `ShieldConfigurationExtension` 이 그린 폭발 고양이 화면이 뜹니다.
+문구는 **"니 미래에 방해가 되는 인스타는 / 내가 날려버렸다먀"**.
+버튼은 두 개 — **알겠다먀(닫기)** 와 **한 번 더 터뜨리기 🔥**(잠금은 안 풀리고 다음 폭발 프레임으로 넘어감).
+
+### 불은 어떻게 움직이나
+
+| 어디 | 움직임 |
+|---|---|
+| 앱 안 (`ExplosionCatView`) | 16프레임 루프를 초당 약 11장으로 재생 — 완전히 부드러움 |
+| 잠금 화면 (Shield) | **정지 이미지만 가능.** 화면이 다시 그려질 때마다(인스타를 열 때마다, "한 번 더 터뜨리기" 를 누를 때마다) 다음 프레임 |
+| 위젯 | 잠금 중이면 폭발 고양이로 바뀜. 위젯 갱신 주기가 길어서 아주 천천히 |
+| `preview-explosion.gif` | 어디에나 붙여 쓸 수 있는 공유용 짤 (카톡 등) |
+
+프레임은 원본 사진 위에 새 폭발을 덧그리는 게 아니라, **이미 타고 있는 영역을 움직이는 난류로 일렁이게**
+만들고 그 위에 불티와 불꽃 혀를 얹는 방식입니다. 모든 시간 항의 주기를 프레임 수에 맞춰
+루프가 끊기지 않습니다. `tools/make_frames.py` 를 보세요.
 
 ## 파일 구조
 
 ```
 insta_cat_ios/
-├── project.yml                  XcodeGen 설정 (타깃 5개, Info.plist·entitlements 자동 생성)
-└── Sources/
-    ├── Shared/                  네 타깃이 모두 함께 쓰는 코드
-    │   ├── AppGroup.swift        App Group 기반 공유 설정/상태
-    │   ├── ActivityNames.swift   DeviceActivity 이름과 스케줄
-    │   └── CatArt.swift          고양이를 Core Graphics 로 직접 그림 (이미지 파일 없음)
-    ├── App/                     본체 앱
-    │   ├── InstaCatApp.swift
-    │   ├── ContentView.swift     권한 · 앱 선택 · 규칙 설정 화면
-    │   ├── CatStage.swift        고양이가 실제로 걸어다니는 영역
-    │   └── ScreenTimeModel.swift 권한 요청, 감시 시작/중지
-    ├── Monitor/                 백그라운드 감시 확장 (시간 초과 감지 → 잠금)
-    ├── Shield/                  잠금 화면 디자인 (고양이 등장)
-    ├── ShieldAction/            잠금 화면 버튼 처리
-    └── Widget/                  홈 화면 위젯 (고양이가 위젯 안을 돌아다님)
+├── project.yml                   XcodeGen 설정 (타깃 5개, Info.plist·entitlements 자동 생성)
+├── Sources/
+│   ├── Shared/                   네 타깃이 함께 쓰는 코드
+│   │   ├── AppGroup.swift         App Group 기반 공유 설정/상태
+│   │   ├── ActivityNames.swift    DeviceActivity 이름과 스케줄
+│   │   ├── CatArt.swift           걸어다니는 고양이를 Core Graphics 로 직접 그림
+│   │   └── ExplosionCat.swift     폭발 짤 프레임 로딩과 대사
+│   ├── App/                      본체 앱
+│   │   ├── InstaCatApp.swift
+│   │   ├── ContentView.swift      권한 · 앱 선택 · 규칙 설정 화면
+│   │   ├── CatStage.swift         걸어다니는 고양이 + 폭발 애니메이션 뷰
+│   │   └── ScreenTimeModel.swift  권한 요청, 감시 시작/중지
+│   ├── Monitor/                  백그라운드 감시 확장 (시간 초과 감지 → 잠금)
+│   ├── Shield/                   잠금 화면 디자인 (폭발 고양이 등장)
+│   ├── ShieldAction/             잠금 화면 버튼 처리
+│   └── Widget/                   홈 화면 위젯
+├── Resources/Explosion/          폭발 애니메이션 16프레임 (앱·잠금화면·위젯 번들에 포함)
+├── preview-explosion.gif         공유용 애니메이션 짤
+└── tools/
+    ├── source_cat.jpg            원본 짤
+    ├── make_frames.py            프레임 생성 (numpy + Pillow)
+    └── make_gif.py               GIF 생성
 ```
+
+`Sources/Shared/ExplosionCat.swift` 가 프레임 로딩과 대사를 들고 있습니다.
+
+### 짤을 다른 걸로 바꾸고 싶으면
+
+```bash
+pip install numpy pillow
+cd insta_cat_ios
+# tools/source_cat.jpg 를 원하는 사진으로 교체한 뒤
+python3 tools/make_frames.py Resources/Explosion
+python3 tools/make_gif.py Resources/Explosion preview-explosion.gif
+```
+
+`make_frames.py` 위쪽의 `BOOM`(불덩이 중심)과 `CAT_C` / `CAT_R`(고양이 위치·크기)을
+새 사진에 맞게 조정하면 됩니다. 대사는 `ExplosionCat.taunt` 와 `make_gif.py` 의 `LINES` 에 있습니다.
+
+> `tools/source_cat.jpg` 는 사용자가 직접 넣은 짤입니다. 본인 폰에 넣어 쓰는 건 문제없지만
+> 앱을 배포할 계획이라면 출처가 분명한 이미지로 바꾸세요.
 
 ---
 
@@ -115,6 +159,8 @@ Xcode 에서:
 - **"5분"은 세션이 아니라 감시 창 기준 누적입니다.** 잠금이 풀릴 때마다 카운터를 0으로 되돌리기 때문에
   실사용상 "한 번에 5분"에 가깝게 동작하지만, 잠금 사이사이 짧게 여러 번 본 시간도 합산됩니다.
 - **앱을 지우면 잠금도 풀립니다.** 의지를 대신해 주지는 못합니다.
+- **잠금 화면의 불은 부드럽게 움직이지 않습니다.** `ShieldConfiguration.icon` 이 `UIImage` 한 장이라
+  동영상도 GIF 도 못 넣습니다. 대신 열 때마다 다른 프레임이 나옵니다.
 - 이 코드는 리눅스 환경에서 작성돼 **컴파일 검증을 하지 못했습니다.** Xcode 에서 처음 열 때 자잘한 수정이 필요할 수 있습니다.
 
 ---

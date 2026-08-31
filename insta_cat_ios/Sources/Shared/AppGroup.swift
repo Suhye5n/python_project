@@ -20,6 +20,7 @@ private enum Key {
     static let petCount = "petCount"
     static let blockedCount = "blockedCount"
     static let blockedCountDay = "blockedCountDay"
+    static let shieldFrame = "shieldFrame"
 }
 
 /// 앱 / 모니터 확장 / 차단 화면 확장이 공유하는 설정과 상태.
@@ -62,7 +63,13 @@ enum Settings {
         set { AppGroup.defaults.set(newValue, forKey: Key.shieldedAt) }
     }
 
-    /// 차단 화면에서 고양이를 쓰다듬은 횟수. 순전히 재미용.
+    /// 잠금 화면에 지금 보여줄 폭발 프레임 번호. 다시 그려질 때마다 하나씩 올라갑니다.
+    static var shieldFrame: Int {
+        get { AppGroup.defaults.integer(forKey: Key.shieldFrame) }
+        set { AppGroup.defaults.set(newValue, forKey: Key.shieldFrame) }
+    }
+
+    /// 잠금 화면에서 "한 번 더 터뜨리기" 를 누른 횟수. 순전히 재미용.
     static var petCount: Int {
         get { AppGroup.defaults.integer(forKey: Key.petCount) }
         set { AppGroup.defaults.set(newValue, forKey: Key.petCount) }

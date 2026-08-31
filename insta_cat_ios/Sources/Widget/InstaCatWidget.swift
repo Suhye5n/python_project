@@ -8,12 +8,15 @@ struct CatEntry: TimelineEntry {
     /// 위젯 안에서 고양이가 서 있을 가로 위치 (0…1). 타임라인마다 조금씩 움직입니다.
     let position: Double
     let pose: CatPose
+    /// 잠금 중일 때 보여줄 폭발 프레임 번호.
+    let frameIndex: Int
 }
 
 struct CatProvider: TimelineProvider {
 
     func placeholder(in context: Context) -> CatEntry {
-        CatEntry(date: Date(), isShielded: false, blockedToday: 0, position: 0.5, pose: .sit)
+        CatEntry(date: Date(), isShielded: false, blockedToday: 0,
+                 position: 0.5, pose: .sit, frameIndex: 0)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CatEntry) -> Void) {
@@ -39,7 +42,8 @@ struct CatProvider: TimelineProvider {
                         isShielded: shielded,
                         blockedToday: Settings.blockedToday,
                         position: position,
-                        pose: pose)
+                        pose: pose,
+                        frameIndex: step)
     }
 }
 
@@ -47,21 +51,31 @@ struct InstaCatWidgetView: View {
     var entry: CatEntry
 
     private var caption: String {
-        entry.isShielded ? "인스타 잠금 중" : "오늘 \(entry.blockedToday)번 잡음"
+        entry.isShielded ? "날려버렸다먀" : "오늘 \(entry.blockedToday)번 잡음"
     }
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottomLeading) {
-                Image(uiImage: CatArt.image(pose: entry.pose))
-                    .resizable()
-                    .frame(width: 62, height: 62)
-                    .position(x: 34 + entry.position * max(0, geo.size.width - 68),
-                              y: geo.size.height - 34)
+                if entry.isShielded, let boom = ExplosionCat.frame(entry.frameIndex) {
+                    // 잠금 중일 때는 위젯도 폭발 고양이로 바뀝니다.
+                    Image(uiImage: boom)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                } else {
+                    Image(uiImage: CatArt.image(pose: entry.pose))
+                        .resizable()
+                        .frame(width: 62, height: 62)
+                        .position(x: 34 + entry.position * max(0, geo.size.width - 68),
+                                  y: geo.size.height - 34)
+                }
 
                 Text(caption)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(.caption2.bold())
+                    .foregroundStyle(entry.isShielded ? Color.white : Color.secondary)
+                    .shadow(color: .black.opacity(entry.isShielded ? 0.9 : 0), radius: 3)
                     .padding(8)
             }
         }

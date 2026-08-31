@@ -141,7 +141,7 @@ struct ContentView: View {
             HStack {
                 stat(title: "오늘 걸린 횟수", value: "\(model.blockedToday)회")
                 Divider()
-                stat(title: "쓰다듬은 횟수", value: "\(Settings.petCount)번")
+                stat(title: "다시 터뜨린 횟수", value: "\(Settings.petCount)번")
             }
         }
     }
@@ -150,7 +150,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("알아두면 좋은 것")
                 .font(.caption.bold())
-            Text("· 아이폰에서는 다른 앱 위에 고양이를 띄울 수 없어요. 인스타 위에 뜨는 건 잠금(Shield) 화면이고, 거기 고양이가 나옵니다.\n· 사용 시간 집계에 1~2분 정도 오차가 생길 수 있어요. 정확한 스톱워치가 아니라 iOS 가 알려주는 시점에 반응합니다.\n· 이 앱을 지우면 잠금도 같이 풀립니다. 의지를 대신해 주지는 못해요.")
+            Text("· 아이폰에서는 다른 앱 위에 고양이를 띄울 수 없어요. 인스타 위에 뜨는 건 잠금(Shield) 화면이고, 거기 폭발 고양이가 나옵니다.\n· 잠금 화면에는 정지 이미지만 넣을 수 있어요. 불이 움직이는 건 이 앱 안에서만 보이고, 잠금 화면은 열 때마다 폭발 장면이 한 칸씩 바뀝니다.\n· 사용 시간 집계에 1~2분 정도 오차가 생길 수 있어요. 정확한 스톱워치가 아니라 iOS 가 알려주는 시점에 반응합니다.\n· 이 앱을 지우면 잠금도 같이 풀립니다. 의지를 대신해 주지는 못해요.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
