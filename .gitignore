@@ -7,3 +7,8 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+
+# InstaCat (iOS) - XcodeGen 산출물
+insta_cat_ios/Generated/
+insta_cat_ios/*.xcodeproj/
+insta_cat_ios/*.xcworkspace/
