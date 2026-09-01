@@ -116,39 +116,78 @@ python3 tools/make_gif.py Resources/Explosion preview-explosion.gif
 
 ---
 
-## 빌드 방법
+## 어떻게 쓰나
 
-**필요한 것**: macOS + Xcode 15 이상, iOS 16 이상 실기기(시뮬레이터에서는 스크린 타임 API 가 제대로 안 돕니다), Apple ID.
+맥이 있느냐로 갈립니다.
 
-FamilyControls 는 **개발용(Development) 으로는 무료 Apple ID 로도 바로 쓸 수 있습니다.**
-App Store 배포용 entitlement 만 애플에 따로 신청해야 합니다. 본인 폰에 넣어서 쓰는 건 신청 없이 가능합니다.
+### A. 맥이 있다 — 진짜 앱을 폰에 넣기
+
+**필요한 것**: macOS + Xcode 15 이상, iOS 16 이상 **실기기**(시뮬레이터에서는 스크린 타임 API 가 제대로 안 돕니다), Apple ID.
+
+FamilyControls 는 **개발용으로는 무료 Apple ID 로도 바로 됩니다.** 애플에 따로 신청할 필요 없습니다.
+(단 무료 계정으로 서명하면 **7일 뒤에 앱이 만료**돼 다시 빌드해야 합니다. 유료 개발자 계정이면 1년.)
 
 ```bash
-brew install xcodegen          # 처음 한 번만
+# 1. 맥에서 레포를 받습니다
+git clone https://github.com/Suhye5n/python_project.git
+cd python_project
+git checkout claude/cat-phone-screen-protection-9ag55s
+
+# 2. xcodegen 설치 (처음 한 번만)
+brew install xcodegen
+
+# 3. 번들 ID 를 본인 것으로 바꾸고 프로젝트 생성 — com.example 그대로면 서명이 안 됩니다.
+#    뒤에 붙일 이름은 아무거나 상관없습니다. com.본인이름 정도면 충분합니다.
 cd insta_cat_ios
-xcodegen generate              # InstaCat.xcodeproj 생성
+./tools/setup.sh com.본인이름
+
+# 4. Xcode 로 엽니다
 open InstaCat.xcodeproj
 ```
 
 Xcode 에서:
 
-1. 5개 타깃(`InstaCat`, `InstaCatMonitor`, `InstaCatShield`, `InstaCatShieldAction`, `InstaCatWidget`) 각각에서
-   **Signing & Capabilities → Team** 을 본인 계정으로 지정합니다.
-2. 번들 ID 는 `com.example.*` 라 그대로는 서명이 안 됩니다. 다섯 개를 본인 도메인으로 바꾸세요.
-   (`project.yml` 의 `PRODUCT_BUNDLE_IDENTIFIER` 를 고치고 `xcodegen generate` 를 다시 돌리는 게 편합니다.
-   앱 = `com.내이름.InstaCat`, 확장 = `com.내이름.InstaCat.Monitor` 처럼 **확장은 반드시 앱 번들 ID 로 시작**해야 합니다.)
-3. App Group `group.com.example.instacat` 도 본인 것으로 바꾼다면
-   `project.yml` 과 `Sources/Shared/AppGroup.swift` 의 `identifier` 를 **똑같이** 맞춰야 합니다.
-   안 맞으면 잠금은 걸리는데 화면에 고양이가 안 나오거나 설정이 안 읽힙니다.
-4. 각 타깃에 **Family Controls** capability 가 붙어 있는지 확인합니다 (entitlements 로 이미 들어가 있습니다).
-5. 실기기에 빌드 → 실행.
+1. 왼쪽 위 프로젝트 아이콘 클릭 → **TARGETS** 에 5개(`InstaCat`, `InstaCatMonitor`, `InstaCatShield`,
+   `InstaCatShieldAction`, `InstaCatWidget`)가 보입니다. **하나씩 다 눌러서**
+   **Signing & Capabilities → Team** 을 본인 Apple ID 로 지정합니다. (5개 전부 해야 합니다.)
+2. 아이폰을 케이블로 연결하고, 위쪽 실행 대상에서 본인 폰을 고릅니다.
+3. ▶︎ 실행.
 
-## 처음 실행 후
+폰에서 처음 한 번:
 
-1. **권한 허용하기** → 스크린 타임 권한 팝업에서 허용
-2. **인스타그램 고르기** → 시스템 앱 목록에서 Instagram 선택
-   (애플이 앱 목록을 가려놔서 코드로 미리 지정할 수 없고, 반드시 사용자가 직접 골라야 합니다)
-3. 제한 시간(기본 5분)과 쿨다운(기본 15분)을 정하고 **고양이 풀어놓기**
+4. 설정 › 일반 › **VPN 및 기기 관리** → 본인 Apple ID → **신뢰**
+5. 앱을 열고 **권한 허용하기** → 스크린 타임 팝업 허용
+6. **인스타그램 고르기** → 목록에서 Instagram 선택
+   (애플이 앱 목록을 가려놔서 코드로 미리 지정할 수 없고, 반드시 직접 골라야 합니다)
+7. 제한 시간(기본 5분)·쿨다운(기본 15분) 정하고 **고양이 풀어놓기**
+
+이제 인스타를 5분 넘게 보면 폭발 고양이가 막아섭니다.
+홈 화면 빈 곳 길게 눌러 **위젯 추가 → 인스타 고양이** 를 올려두면 고양이가 홈 화면에도 앉습니다.
+
+### B. 맥이 없다 — 아이폰만으로
+
+앱은 못 넣지만 비슷한 걸 5분이면 만들 수 있습니다.
+
+**1) 짤부터 저장** — `preview-explosion.gif` 를 아이폰 사진 앨범에 저장해 둡니다.
+
+**2) 인스타 5분 뒤 짤 띄우고 화면 잠그기**
+
+단축어 앱 › 자동화 › **새 자동화** › **앱** › Instagram › **열렸을 때** › **즉시 실행**(묻지 않기)
+
+동작을 이 순서로 넣습니다:
+
+| 순서 | 동작 | 설정 |
+|---|---|---|
+| 1 | 대기 | 300초 |
+| 2 | 사진 찾기 | 앨범이 (짤을 넣어둔 앨범)인 항목, 개수 제한 1 |
+| 3 | 빠른 보기 | — |
+| 4 | 화면 잠그기 | — |
+
+인스타를 열고 5분이 지나면 폭발 고양이가 화면을 덮고 폰이 잠깁니다.
+중간에 인스타를 나가도 타이머가 계속 돈다는 점, 백그라운드에서 대기가 끊길 수 있다는 점이 단점입니다.
+
+**3) 더 단순하게** — 설정 › 스크린 타임 › 앱 시간 제한 › 소셜 › Instagram → 5분.
+확실하게 막히지만 **하루 총합** 기준이라 한 번 쓰면 그날은 끝입니다. 고양이도 안 나오고요.
 
 ---
 
@@ -162,20 +201,3 @@ Xcode 에서:
 - **잠금 화면의 불은 부드럽게 움직이지 않습니다.** `ShieldConfiguration.icon` 이 `UIImage` 한 장이라
   동영상도 GIF 도 못 넣습니다. 대신 열 때마다 다른 프레임이 나옵니다.
 - 이 코드는 리눅스 환경에서 작성돼 **컴파일 검증을 하지 못했습니다.** Xcode 에서 처음 열 때 자잘한 수정이 필요할 수 있습니다.
-
----
-
-## 맥이 없다면 — 오늘 당장 되는 무료 대안
-
-Xcode 없이 아이폰만으로 비슷한 걸 만들 수 있습니다. 고양이는 없지만요.
-
-**A. 스크린 타임 앱 시간 제한 (가장 간단)**
-설정 › 스크린 타임 › 앱 시간 제한 › 소셜 › Instagram → 5분.
-단, **하루 총합** 기준이라 한 번 쓰면 그날은 끝입니다.
-
-**B. 단축어 자동화 (세션마다 5분)**
-단축어 앱 › 자동화 › 새 자동화 › **앱** › Instagram › **열렸을 때** › 즉시 실행(묻지 않기)
-→ 동작: **대기 300초** → **화면 잠그기**
-
-인스타를 열고 5분이 지나면 화면이 잠깁니다. 중간에 인스타를 나가도 타이머가 계속 도는 점,
-백그라운드에서 대기가 중간에 끊길 수 있는 점이 단점입니다. 그래도 설치 없이 5분이면 세팅됩니다.
