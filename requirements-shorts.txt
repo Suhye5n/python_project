@@ -1,0 +1,7 @@
+# shorts_maker 실행에 필요한 패키지 (ffmpeg 는 따로 설치: brew install ffmpeg)
+numpy
+pillow
+opencv-python-headless
+torch
+open_clip_torch
+easyocr

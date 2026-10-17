@@ -1,0 +1,50 @@
+# shorts_maker 설정 예시
+# 이 파일을 shorts_maker.toml 로 복사한 뒤 바꾸고 싶은 값만 고치세요.
+# 적지 않은 항목은 기본값(지금까지 만든 쇼츠를 측정한 값)을 씁니다.
+# 경로는 이 파일이 있는 폴더 기준입니다.
+
+[subtitle]
+font = "fonts/온글잎 밑미체.ttf"   # 자막 폰트 파일
+glyph_height = 64                  # 한글 글자 높이(px). 글자가 작으면 키우세요
+center_y = 505                     # 자막 세로 위치(위에서부터 px, 화면 높이 1920)
+max_width = 1000                   # 이보다 길면 srt 를 다시 달라고 알려줍니다
+color = "#FFFFFF"
+shadow_color = "#000000"
+shadow_stroke = 3                  # 그림자 두께
+shadow_blur = 5.0                  # 그림자 번짐
+shadow_strength = 1.6              # 그림자 진하기
+
+[thumbnail]
+font = "fonts/낼나 리지체.ttf"      # 썸네일 문구 폰트
+glyph_height = 140
+center_y = 548
+line_spacing = 188
+color = "#FFFFFF"
+highlight_color = "#FDF7AE"        # thumbnail.txt 에서 *이렇게* 감싼 부분 색
+stroke = 11                        # 검은 테두리 두께
+background = "auto"                # auto = 제품이 가장 잘 보이는 장면, 또는 이미지 파일 경로
+
+[ad_tag]
+enabled = true                     # 오른쪽 위 [광고] 표시
+text = "[광고]"
+
+[cut]
+max_speed = 2.5                    # 배속 상한
+per_source_limit = 5.0             # 한 원본 영상에서 쓸 수 있는 시간 합계(초)
+long_shot = "fit"                  # fit: 짧은 장면은 배속해서 통째로 / natural: 항상 1배속
+
+[score]
+product = 1.0                      # 제품이 잘 보이는 장면 우선 정도
+sharpness = 0.5                    # 선명한 장면 우선 정도
+text = 1.5                         # 글자 있는 장면을 피하는 정도
+
+[blur]
+enabled = true                     # 원본 영상의 자막 가리기
+sigma = 22.0                       # 블러 세기
+
+[audio]
+gain_db = 15.0                     # 목소리 키우기(dB)
+limiter = true                     # 소리가 깨지지 않게 막기
+
+[video]
+crf = 17                           # 화질 (낮을수록 고화질·큰 파일)

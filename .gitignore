@@ -7,3 +7,9 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+
+# shorts_maker 개인 설정·폰트·작업 산출물
+shorts_maker.toml
+fonts/
+.cache/
+.work/

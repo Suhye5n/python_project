@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - "design_digest/**"
+      - "shorts_maker/**"
       - "tests/**"
       - ".github/workflows/design-digest*.yml"
   pull_request:
     paths:
       - "design_digest/**"
+      - "shorts_maker/**"
       - "tests/**"
 
 jobs:
