@@ -17,12 +17,13 @@ python -m reels_script.extract "https://www.instagram.com/reel/XXXX/"
 ```bash
 python -m reels_script.extract URL1 URL2 --caption -m medium
 ```
-결과: `reels_out/<릴스ID>.txt`
+결과: `reels_out/<릴스ID>.txt` (이미 추출된 릴스는 건너뜀 → 실패한 것만 다시 돌리면 됨)
 
 | 옵션 | 설명 |
 |---|---|
 | `-m` | `tiny`(빠름) ~ `large-v3`(정확). 한국어는 `small`~`medium` 권장 |
 | `-l` | 언어, 기본 `ko`, 자동감지는 `auto` |
+| `-b chrome` | 크롬에 로그인된 인스타 계정으로 다운로드 (로그인 필요/연령제한 릴스) |
 | `--cookies` | 로그인 필요할 때 브라우저에서 내보낸 cookies.txt |
 | `--caption` | 게시물 설명글도 함께 저장 |
 

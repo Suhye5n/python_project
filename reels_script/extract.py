@@ -6,14 +6,19 @@
 사용법:
     python -m reels_script.extract URL [URL ...] [-m small] [-o reels_out]
 """
+from __future__ import annotations
+
 import argparse
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 
-def download_audio(url: str, workdir: Path, cookies: str | None) -> tuple[Path, dict]:
+def download_audio(url: str, workdir: Path, cookies: str | None,
+                   browser: str | None) -> tuple[Path, dict]:
     import yt_dlp
 
     opts = {
@@ -24,14 +29,34 @@ def download_audio(url: str, workdir: Path, cookies: str | None) -> tuple[Path, 
     }
     if cookies:
         opts["cookiefile"] = cookies         # 로그인 필요 시 브라우저에서 내보낸 cookies.txt
+    if browser:
+        opts["cookiesfrombrowser"] = (browser,)  # 브라우저 로그인 상태 그대로 사용
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
         return Path(ydl.prepare_filename(info)), info
 
 
+def load_audio(audio: Path):
+    """ffmpeg로 16kHz 모노 배열을 만든다.
+
+    faster-whisper 내부 디코더(PyAV)는 버전 조합에 따라
+    `open() got an unexpected keyword argument 'metadata_errors'` 에러가 나므로 우회한다.
+    """
+    if not shutil.which("ffmpeg"):
+        return str(audio)
+    import numpy as np
+
+    raw = subprocess.run(
+        ["ffmpeg", "-nostdin", "-loglevel", "error", "-i", str(audio),
+         "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
+        capture_output=True, check=True,
+    ).stdout
+    return np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+
+
 def transcribe(audio: Path, model, lang: str | None) -> str:
     segments, _ = model.transcribe(
-        str(audio), language=lang, vad_filter=True, beam_size=1
+        load_audio(audio), language=lang, vad_filter=True, beam_size=1
     )
     lines = [s.text.strip() for s in segments if s.text.strip()]
     # 연속 중복 문장 제거(whisper 반복 환각 방지)
@@ -47,6 +72,8 @@ def main(argv=None) -> int:
     p.add_argument("-l", "--lang", default="ko", help="언어 코드, 자동감지는 'auto'")
     p.add_argument("-o", "--out", default="reels_out", help="출력 폴더")
     p.add_argument("--cookies", help="cookies.txt 경로 (비공개/로그인 필요 시)")
+    p.add_argument("-b", "--browser",
+                   help="이 브라우저의 로그인 쿠키 사용 (chrome/safari/firefox/edge)")
     p.add_argument("--caption", action="store_true", help="게시물 캡션도 함께 저장")
     a = p.parse_args(argv)
 
@@ -59,9 +86,13 @@ def main(argv=None) -> int:
 
     fails = 0
     for url in a.urls:
+        m = re.search(r"/(?:reels?|p|tv)/([\w-]+)", url)
+        if m and (out / f"{m.group(1)}.txt").exists():
+            print(f"SKIP {url} (이미 있음)")
+            continue
         try:
             with tempfile.TemporaryDirectory() as td:
-                audio, info = download_audio(url, Path(td), a.cookies)
+                audio, info = download_audio(url, Path(td), a.cookies, a.browser)
                 text = transcribe(audio, model, lang)
             vid = re.sub(r"[^\w-]", "_", info.get("id") or "reel")
             body = text
